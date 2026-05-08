@@ -3,21 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>스마트 급식 지도</title>
   
-  <!-- 스타일 & 아이콘 폰트 (Tailwind CSS) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 리액트 구동을 위한 기본 엔진 (React, ReactDOM, Babel) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
-  <!-- 엑셀 파일 분석을 위한 모듈 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
-    /* 스마트폰 하단 여백 보호 */
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     body { -webkit-tap-highlight-color: transparent; }
   </style>
@@ -28,7 +25,6 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // --- 아이콘 컴포넌트 모음 (수제작 SVG) ---
     const Search = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
     const Armchair = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 5 12.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>);
     const AlertTriangle = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
@@ -40,9 +36,12 @@
     const CheckCircle2 = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>);
     const ChevronDown = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"/></svg>);
     const Plus = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
+    const RefreshCw = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>);
 
-    // --- 데이터 및 상수 설정 ---
-    const SPECIAL_SEATS = [235, 236, 237, 262, 263, 264, 286, 287, 288, 310, 311, 312];
+    // 지정여분좌석 및 휠체어 좌석 상수 정의
+    const DESIGNATED_SPARES = [208, 209, 210, 235, 236, 237, 286, 287, 288, 310, 311, 312, 499, 500, 501, 502, 503, 504];
+    const WHEELCHAIR_SEATS = [262, 263, 264];
+    
     const SHIFT_INFO = [
       { id: '1차', title: '1차 급식', desc: '3학년 1~10반, 2학년 1~5반' },
       { id: '2차', title: '2차 급식', desc: '2학년 6~10반, 1학년 1~10반' }
@@ -54,11 +53,9 @@
       { 차시: '1차', 구역: '남', 학년: 3, 반: 1, 번호: 21, 이름: '강동협', 좌석번호: 1 },
       { 차시: '2차', 구역: '남', 학년: 1, 반: 8, 번호: 33, 이름: '채희승', 좌석번호: 223 },
       { 차시: '2차', 구역: '남', 학년: '', 반: '', 번호: '', 이름: '여분좌석', 좌석번호: 225 },
-      { 차시: '2차', 구역: '남', 학년: '', 반: '', 번호: '', 이름: '여분좌석', 좌석번호: 235 },
       { 차시: '2차', 구역: '여', 학년: 1, 반: 9, 번호: 1, 이름: '강다연', 좌석번호: 470 },
     ];
 
-    // --- 메인 앱 컴포넌트 ---
     function App() {
       const [activeTab, setActiveTab] = useState('search');
       const [students, setStudents] = useState([]);
@@ -85,7 +82,6 @@
           setPenalties(merged);
         }
 
-        // Check if XLSX is loaded from head script
         const checkXLSX = setInterval(() => {
           if (window.XLSX) {
             setIsXlsxLoaded(true);
@@ -97,6 +93,12 @@
       useEffect(() => {
         localStorage.setItem('lunchPenalties', JSON.stringify(penalties));
       }, [penalties]);
+
+      const handleForceUpdate = () => {
+        if(window.confirm('앱을 최신 버전으로 업데이트(새로고침) 하시겠습니까?\n(기존 데이터는 삭제되지 않습니다.)')) {
+            window.location.replace(window.location.pathname + '?update=' + new Date().getTime());
+        }
+      };
 
       const Navigation = () => (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-md border-t border-slate-100 flex justify-around pb-safe z-30 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] rounded-t-3xl px-2">
@@ -121,10 +123,15 @@
 
       return (
         <div className="max-w-md mx-auto bg-slate-50/50 min-h-screen shadow-2xl relative font-sans text-slate-800 break-keep">
-          <header className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white p-5 shadow-lg rounded-b-[2rem] sticky top-0 z-20">
+          <header className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white p-4 shadow-lg rounded-b-[2rem] sticky top-0 z-20 flex justify-between items-center px-5">
+            <div className="w-[76px]"></div>
             <h1 className="text-xl font-extrabold flex items-center justify-center gap-2 tracking-tight">
               <Users size={26} className="opacity-90" /> 스마트 급식 지도
             </h1>
+            <button onClick={handleForceUpdate} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 active:scale-95 px-2.5 py-1.5 rounded-full transition-all shadow-sm border border-white/10" title="최신 버전으로 새로고침">
+              <RefreshCw size={13} strokeWidth={2.5} />
+              <span className="text-[11px] font-black tracking-tight pt-px">업데이트</span>
+            </button>
           </header>
 
           <main className="p-5 pb-28 min-h-[calc(100vh-80px)]">
@@ -258,17 +265,57 @@
     // --- 2. 여분 좌석 탭 ---
     function SpareSeatsTab({ students }) {
       const [shift, setShift] = useState('1차');
-      const getSpareSeats = (zone) => students.filter(s => s.차시 === shift && s.구역 === zone && (!s.이름 || String(s.이름).trim() === '' || String(s.이름).includes('여분'))).sort((a, b) => parseInt(a.좌석번호) - parseInt(b.좌석번호));
+      
+      const getSpareSeats = (zone) => {
+        // 학생 데이터를 바탕으로 각 좌석이 남학생 구역인지 여학생 구역인지 파악
+        const seatZones = {};
+        students.forEach(s => {
+          if (s.좌석번호 && s.구역) seatZones[parseInt(s.좌석번호)] = s.구역;
+        });
+        
+        // 엑셀에 없는 좌석 번호일 경우의 기본 구역 (250번 이하: 남, 초과: 여)
+        const getZone = (num) => seatZones[num] || (num <= 250 ? '남' : '여');
+
+        // 1. 일반 학생 중 빈자리(여분) 추출
+        const regularSpares = students.filter(s => 
+          s.차시 === shift && 
+          s.구역 === zone && 
+          (!s.이름 || String(s.이름).trim() === '' || String(s.이름).includes('여분')) &&
+          !DESIGNATED_SPARES.includes(parseInt(s.좌석번호)) &&
+          !WHEELCHAIR_SEATS.includes(parseInt(s.좌석번호))
+        ).map(s => parseInt(s.좌석번호));
+
+        // 2. 지정여분좌석과 휠체어 좌석 (1, 2차 모두 무조건 노출되도록 필터링)
+        const designated = DESIGNATED_SPARES.filter(num => getZone(num) === zone);
+        const wheelchair = WHEELCHAIR_SEATS.filter(num => getZone(num) === zone);
+
+        // 중복 제거 및 오름차순 정렬
+        return Array.from(new Set([...regularSpares, ...designated, ...wheelchair])).sort((a, b) => a - b);
+      };
+
       const maleSpares = getSpareSeats('남');
       const femaleSpares = getSpareSeats('여');
 
-      const SeatBadge = ({ seat }) => {
-        const seatNum = parseInt(seat.좌석번호);
-        const isSpecial = SPECIAL_SEATS.includes(seatNum);
+      const SeatBadge = ({ seatNum }) => {
+        const isDesignated = DESIGNATED_SPARES.includes(seatNum);
+        const isWheelchair = WHEELCHAIR_SEATS.includes(seatNum);
+
+        let bgClass = 'bg-white border-slate-200 text-slate-700';
+        let label = null;
+
+        // 배경색 및 라벨 디자인 적용
+        if (isWheelchair) {
+          bgClass = 'bg-gradient-to-br from-pink-400 to-rose-500 border-rose-500 text-white shadow-md';
+          label = <span className="text-[10px] italic mt-1 font-bold bg-black/20 px-2 py-0.5 rounded-full whitespace-nowrap">휠체어</span>;
+        } else if (isDesignated) {
+          bgClass = 'bg-gradient-to-br from-emerald-400 to-green-500 border-green-500 text-white shadow-md';
+          label = <span className="text-[9px] italic mt-1 font-bold bg-black/20 px-1.5 py-0.5 rounded-full whitespace-nowrap tracking-tighter">1, 2차여분</span>;
+        }
+
         return (
-          <div className={`relative flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm border transition-all hover:scale-105 ${isSpecial ? 'bg-gradient-to-br from-orange-400 to-amber-500 border-amber-500 text-white' : 'bg-white border-slate-200 text-slate-700'}`}>
+          <div className={`relative flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm border transition-all hover:scale-105 ${bgClass}`}>
             <span className="text-2xl font-black">{seatNum}</span>
-            {isSpecial && <span className="text-[9px] font-bold mt-1 bg-black/20 px-2 py-0.5 rounded-full whitespace-nowrap">지정여분</span>}
+            {label}
           </div>
         );
       };
@@ -283,8 +330,8 @@
             ))}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-b from-blue-50 to-white p-5 rounded-3xl border border-blue-100 shadow-sm"><h3 className="text-blue-800 font-extrabold mb-4 flex items-center gap-2 text-[15px] whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-sm"></span> 남학생</h3><div className="grid grid-cols-2 gap-3">{maleSpares.map((seat, idx) => <SeatBadge key={`m-${idx}`} seat={seat} />)}{maleSpares.length === 0 && <p className="text-[12px] font-medium text-slate-400 col-span-2 py-4 text-center break-keep">여분 좌석이 없습니다.</p>}</div></div>
-            <div className="bg-gradient-to-b from-pink-50 to-white p-5 rounded-3xl border border-pink-100 shadow-sm"><h3 className="text-pink-800 font-extrabold mb-4 flex items-center gap-2 text-[15px] whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block shadow-sm"></span> 여학생</h3><div className="grid grid-cols-2 gap-3">{femaleSpares.map((seat, idx) => <SeatBadge key={`f-${idx}`} seat={seat} />)}{femaleSpares.length === 0 && <p className="text-[12px] font-medium text-slate-400 col-span-2 py-4 text-center break-keep">여분 좌석이 없습니다.</p>}</div></div>
+            <div className="bg-gradient-to-b from-blue-50 to-white p-5 rounded-3xl border border-blue-100 shadow-sm"><h3 className="text-blue-800 font-extrabold mb-4 flex items-center gap-2 text-[15px] whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-sm"></span> 남학생</h3><div className="grid grid-cols-2 gap-3">{maleSpares.map((seatNum, idx) => <SeatBadge key={`m-${idx}`} seatNum={seatNum} />)}{maleSpares.length === 0 && <p className="text-[12px] font-medium text-slate-400 col-span-2 py-4 text-center break-keep">여분 좌석이 없습니다.</p>}</div></div>
+            <div className="bg-gradient-to-b from-pink-50 to-white p-5 rounded-3xl border border-pink-100 shadow-sm"><h3 className="text-pink-800 font-extrabold mb-4 flex items-center gap-2 text-[15px] whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block shadow-sm"></span> 여학생</h3><div className="grid grid-cols-2 gap-3">{femaleSpares.map((seatNum, idx) => <SeatBadge key={`f-${idx}`} seatNum={seatNum} />)}{femaleSpares.length === 0 && <p className="text-[12px] font-medium text-slate-400 col-span-2 py-4 text-center break-keep">여분 좌석이 없습니다.</p>}</div></div>
           </div>
         </div>
       );
@@ -409,7 +456,6 @@
       );
     }
 
-    // React 18 렌더링 방식
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
