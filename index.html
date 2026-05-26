@@ -25,6 +25,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
+    // --- SVG 아이콘 컴포넌트 모음 ---
     const Search = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
     const Armchair = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 5 12.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>);
     const AlertTriangle = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
@@ -38,7 +39,7 @@
     const Plus = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
     const RefreshCw = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>);
 
-    // 지정여분좌석 및 휠체어 좌석 상수 정의
+    // --- 지정여분좌석 및 휠체어 좌석 상수 정의 ---
     const DESIGNATED_SPARES = [208, 209, 210, 235, 236, 237, 286, 287, 288, 310, 311, 312, 499, 500, 501, 502, 503, 504];
     const WHEELCHAIR_SEATS = [262, 263, 264];
     
@@ -46,6 +47,8 @@
       { id: '1차', title: '1차 급식', desc: '3학년 1~10반, 2학년 1~5반' },
       { id: '2차', title: '2차 급식', desc: '2학년 6~10반, 1학년 1~10반' }
     ];
+    
+    // 최초 앱 실행 시 기본으로 들어가는 데모 데이터
     const INITIAL_DATA = [
       { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 1, 이름: '김가은', 좌석번호: 265 },
       { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 2, 이름: '김나라', 좌석번호: 266 },
@@ -62,6 +65,7 @@
       const [penalties, setPenalties] = useState([]);
       const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
 
+      // 로컬 스토리지 데이터 불러오기
       useEffect(() => {
         const savedStudents = localStorage.getItem('lunchStudents');
         const savedPenalties = localStorage.getItem('lunchPenalties');
@@ -90,14 +94,14 @@
         }, 100);
       }, []);
 
+      // 벌점 데이터 자동 저장
       useEffect(() => {
         localStorage.setItem('lunchPenalties', JSON.stringify(penalties));
       }, [penalties]);
 
+      // 강제 업데이트(새로고침) 기능
       const handleForceUpdate = () => {
-        if(window.confirm('앱을 최신 버전으로 업데이트(새로고침) 하시겠습니까?\n(기존 데이터는 삭제되지 않습니다.)')) {
-            window.location.replace(window.location.pathname + '?update=' + new Date().getTime());
-        }
+        window.location.replace(window.location.pathname + '?update=' + new Date().getTime());
       };
 
       const Navigation = () => (
@@ -123,12 +127,17 @@
 
       return (
         <div className="max-w-md mx-auto bg-slate-50/50 min-h-screen shadow-2xl relative font-sans text-slate-800 break-keep">
+          
           <header className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white p-4 shadow-lg rounded-b-[2rem] sticky top-0 z-20 flex justify-between items-center px-5">
-            <div className="w-[76px]"></div>
+            <div className="w-[76px]"></div> {/* 업데이트 버튼과 대칭을 위한 여백 */}
             <h1 className="text-xl font-extrabold flex items-center justify-center gap-2 tracking-tight">
               <Users size={26} className="opacity-90" /> 스마트 급식 지도
             </h1>
-            <button onClick={handleForceUpdate} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 active:scale-95 px-2.5 py-1.5 rounded-full transition-all shadow-sm border border-white/10" title="최신 버전으로 새로고침">
+            <button 
+              onClick={handleForceUpdate} 
+              className="flex items-center gap-1 bg-white/20 hover:bg-white/30 active:scale-95 px-2.5 py-1.5 rounded-full transition-all shadow-sm border border-white/10" 
+              title="최신 버전으로 새로고침"
+            >
               <RefreshCw size={13} strokeWidth={2.5} />
               <span className="text-[11px] font-black tracking-tight pt-px">업데이트</span>
             </button>
@@ -148,14 +157,27 @@
     // --- 1. 검색 탭 ---
     function SearchTab({ students }) {
       const [shift, setShift] = useState('1차');
-      const [searchMode, setSearchMode] = useState('student');
+      const [searchMode, setSearchMode] = useState('name'); // 기본값을 이름 검색으로 변경 가능
       const [searchQuery, setSearchQuery] = useState('');
       const [result, setResult] = useState(null);
 
       const handleSearch = () => {
         if (!searchQuery.trim()) return setResult(null);
 
-        if (searchMode === 'student') {
+        // 1. 이름으로 찾기
+        if (searchMode === 'name') {
+          const q = searchQuery.trim();
+          // 이름에 검색어가 포함되고 여분좌석이 아닌 학생 모두 찾기
+          const foundStudents = students.filter(s => s.이름 && String(s.이름).includes(q) && !String(s.이름).includes('여분'));
+          
+          if (foundStudents.length > 0) {
+            setResult({ type: 'NAME_SUCCESS', data: foundStudents });
+          } else {
+            setResult({ type: 'NOT_FOUND' });
+          }
+        } 
+        // 2. 학번으로 찾기
+        else if (searchMode === 'student') {
           const cleanQ = searchQuery.replace(/[^0-9]/g, '');
           let g, c, n, foundOverall = null;
           if (cleanQ.length >= 3 && cleanQ.length <= 5) {
@@ -170,7 +192,9 @@
             if (foundOverall.차시 === shift) setResult({ type: 'STUDENT_SUCCESS', data: foundOverall });
             else setResult({ type: 'WRONG_SHIFT', data: foundOverall });
           } else setResult({ type: 'NOT_FOUND' });
-        } else {
+        } 
+        // 3. 좌석 번호로 찾기
+        else {
           const seatNum = parseInt(searchQuery);
           const seatStudents = students.filter(s => parseInt(s.좌석번호) === seatNum);
           if (seatStudents.length > 0) {
@@ -185,11 +209,15 @@
 
       return (
         <div className="space-y-6 flex flex-col items-center w-full animate-in fade-in duration-500">
-          <div className="flex bg-slate-200/70 p-1.5 rounded-2xl w-full gap-1 shadow-inner">
-            <button onClick={() => handleModeChange('student')} className={`flex-1 py-3.5 text-[13px] sm:text-sm font-bold rounded-xl transition-all duration-300 whitespace-nowrap ${searchMode === 'student' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>학생 정보로 찾기</button>
-            <button onClick={() => handleModeChange('seat')} className={`flex-1 py-3.5 text-[13px] sm:text-sm font-bold rounded-xl transition-all duration-300 whitespace-nowrap ${searchMode === 'seat' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>좌석 번호로 찾기</button>
+          
+          {/* 세련된 검색 모드 토글 버튼 (3개) */}
+          <div className="flex bg-slate-200/70 p-1.5 rounded-2xl w-full gap-1 shadow-inner overflow-hidden">
+            <button onClick={() => handleModeChange('student')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'student' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>학번으로 찾기</button>
+            <button onClick={() => handleModeChange('name')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'name' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>이름으로 찾기</button>
+            <button onClick={() => handleModeChange('seat')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'seat' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>좌석번호로 찾기</button>
           </div>
 
+          {/* 학번 검색 시에만 차시 선택 보여주기 */}
           {searchMode === 'student' && (
             <div className="flex bg-white/80 backdrop-blur-sm border border-slate-200 p-1.5 rounded-2xl w-full gap-1.5 shadow-sm">
               {SHIFT_INFO.map(s => (
@@ -202,7 +230,14 @@
           )}
 
           <div className="relative w-full group">
-            <input type={searchMode === 'seat' ? 'number' : 'text'} placeholder={searchMode === 'student' ? "학년 반 번호 입력 (예: 30115)" : "좌석 번호 입력 (예: 250)"} className="w-full pl-5 pr-14 py-4 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all text-lg font-bold shadow-sm placeholder:font-medium placeholder:text-slate-300" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+            <input 
+              type={searchMode === 'seat' ? 'number' : 'text'} 
+              placeholder={searchMode === 'student' ? "학년 반 번호 입력 (예: 30115)" : searchMode === 'name' ? "학생 이름 입력 (예: 홍길동)" : "좌석 번호 입력 (예: 250)"} 
+              className="w-full pl-5 pr-14 py-4 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all text-[15px] sm:text-lg font-bold shadow-sm placeholder:font-medium placeholder:text-slate-300" 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()} 
+            />
             <button onClick={handleSearch} className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95 flex items-center justify-center"><Search size={22} strokeWidth={2.5} /></button>
           </div>
 
@@ -212,12 +247,43 @@
                 <div className="bg-rose-100 p-3 rounded-full"><UserX size={32} /></div><p className="font-bold text-[15px]">검색 결과가 없습니다.</p>
               </div>
             )}
+            
             {result?.type === 'WRONG_SHIFT' && (
               <div className="bg-orange-50 p-6 rounded-3xl text-center flex flex-col items-center gap-3 border border-orange-200 shadow-sm animate-in zoom-in-95 duration-300">
                 <div className="bg-orange-100 text-orange-600 p-3 rounded-full"><AlertTriangle size={32} /></div>
                 <div className="space-y-1"><p className="font-medium text-orange-800 text-[15px] break-keep">해당 학생은 <span className="font-extrabold text-orange-600 text-lg mx-1">{shift}</span> 대상자가 아닙니다.</p><p className="text-[13px] text-orange-700 font-bold bg-orange-100/50 inline-block px-3 py-1 rounded-full mt-2">올바른 차시: {result.data.차시}</p></div>
               </div>
             )}
+
+            {/* 새롭게 추가된 이름 검색 결과 영역 (여러 명이 나와도 예쁘게 나열됩니다) */}
+            {result?.type === 'NAME_SUCCESS' && (
+              <div className="w-full space-y-4 animate-in slide-in-from-bottom-6 duration-500">
+                <div className="bg-slate-800 p-4 rounded-3xl shadow-lg text-center relative overflow-hidden mb-2">
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-slate-700"></div>
+                  <div className="relative z-10">
+                    <p className="text-[13px] text-slate-300 font-bold mb-1 tracking-widest uppercase">검색된 학생 수</p>
+                    <div className="text-3xl font-black text-white drop-shadow-md">{result.data.length}명</div>
+                  </div>
+                </div>
+                {result.data.map((student, idx) => (
+                  <div key={idx} className="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-100 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                    <div className="flex justify-between items-end mb-2">
+                      <div className="text-left">
+                        <span className="bg-indigo-100 text-indigo-700 text-[11px] font-extrabold px-3 py-1.5 rounded-lg mb-3 inline-block shadow-sm tracking-wide">{student.차시} 급식</span>
+                        <p className="text-[13px] font-bold text-slate-400 mb-0.5 whitespace-nowrap">{student.학년}학년 {student.반}반 {student.번호}번</p>
+                        <p className="text-3xl font-black text-slate-800 tracking-tight whitespace-nowrap">{student.이름}</p>
+                      </div>
+                      <div className="text-right flex flex-col items-end">
+                        <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-black text-white shadow-lg transform rotate-3 transition-transform hover:rotate-0 ${student.구역 === '남' ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-pink-400 to-rose-500'}`}>{student.좌석번호}</div>
+                        <p className="text-[12px] font-extrabold text-slate-400 mt-3 bg-slate-100 px-3 py-1 rounded-lg whitespace-nowrap">{student.구역}학생 구역</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {result?.type === 'STUDENT_SUCCESS' && (
               <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-100 animate-in slide-in-from-bottom-6 duration-500 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
@@ -233,6 +299,7 @@
                 </div>
               </div>
             )}
+            
             {result?.type === 'SEAT_SUCCESS' && (
               <div className="w-full space-y-4 animate-in slide-in-from-bottom-6 duration-500">
                 <div className="bg-slate-800 p-5 rounded-3xl shadow-lg text-center relative overflow-hidden">
@@ -267,16 +334,13 @@
       const [shift, setShift] = useState('1차');
       
       const getSpareSeats = (zone) => {
-        // 학생 데이터를 바탕으로 각 좌석이 남학생 구역인지 여학생 구역인지 파악
         const seatZones = {};
         students.forEach(s => {
           if (s.좌석번호 && s.구역) seatZones[parseInt(s.좌석번호)] = s.구역;
         });
         
-        // 엑셀에 없는 좌석 번호일 경우의 기본 구역 (250번 이하: 남, 초과: 여)
         const getZone = (num) => seatZones[num] || (num <= 250 ? '남' : '여');
 
-        // 1. 일반 학생 중 빈자리(여분) 추출
         const regularSpares = students.filter(s => 
           s.차시 === shift && 
           s.구역 === zone && 
@@ -285,11 +349,9 @@
           !WHEELCHAIR_SEATS.includes(parseInt(s.좌석번호))
         ).map(s => parseInt(s.좌석번호));
 
-        // 2. 지정여분좌석과 휠체어 좌석 (1, 2차 모두 무조건 노출되도록 필터링)
         const designated = DESIGNATED_SPARES.filter(num => getZone(num) === zone);
         const wheelchair = WHEELCHAIR_SEATS.filter(num => getZone(num) === zone);
 
-        // 중복 제거 및 오름차순 정렬
         return Array.from(new Set([...regularSpares, ...designated, ...wheelchair])).sort((a, b) => a - b);
       };
 
@@ -303,7 +365,6 @@
         let bgClass = 'bg-white border-slate-200 text-slate-700';
         let label = null;
 
-        // 배경색 및 라벨 디자인 적용
         if (isWheelchair) {
           bgClass = 'bg-gradient-to-br from-pink-400 to-rose-500 border-rose-500 text-white shadow-md';
           label = <span className="text-[10px] italic mt-1 font-bold bg-black/20 px-2 py-0.5 rounded-full whitespace-nowrap">휠체어</span>;
