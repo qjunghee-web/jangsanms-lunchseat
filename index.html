@@ -3,18 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 스마트폰 캐시 방지 메타 태그 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>스마트 급식 지도</title>
   
+  <!-- 스타일 & 아이콘 폰트 (Tailwind CSS) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 리액트 구동을 위한 기본 엔진 (순수 브라우저용) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- 에러를 방지하기 위해 가장 안정적인 버전의 Babel 엔진 사용 -->
+  <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
+  
+  <!-- 엑셀 파일 분석을 위한 모듈 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
+    /* 스마트폰 하단 여백 보호 */
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     body { -webkit-tap-highlight-color: transparent; }
   </style>
@@ -22,10 +30,12 @@
 <body class="bg-slate-100 text-slate-800">
   <div id="root"></div>
 
+  <!-- 순수 브라우저 스크립트 실행 (에러를 유발하던 data-type 속성 제거) -->
   <script type="text/babel">
+    // 전역 변수에서 React Hook 추출 (import 사용 금지)
     const { useState, useEffect, useRef } = React;
 
-    // --- SVG 아이콘 컴포넌트 모음 ---
+    // --- 수제작 SVG 아이콘 컴포넌트 모음 (lucide-react import 에러 방지용) ---
     const Search = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
     const Armchair = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 5 12.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>);
     const AlertTriangle = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
@@ -39,7 +49,7 @@
     const Plus = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
     const RefreshCw = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>);
 
-    // --- 지정여분좌석 및 휠체어 좌석 상수 정의 ---
+    // --- 지정여분좌석 및 휠체어 좌석 상수 정의 복구 ---
     const DESIGNATED_SPARES = [208, 209, 210, 235, 236, 237, 286, 287, 288, 310, 311, 312, 499, 500, 501, 502, 503, 504];
     const WHEELCHAIR_SEATS = [262, 263, 264];
     
@@ -47,8 +57,6 @@
       { id: '1차', title: '1차 급식', desc: '3학년 1~10반, 2학년 1~5반' },
       { id: '2차', title: '2차 급식', desc: '2학년 6~10반, 1학년 1~10반' }
     ];
-    
-    // 최초 앱 실행 시 기본으로 들어가는 데모 데이터
     const INITIAL_DATA = [
       { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 1, 이름: '김가은', 좌석번호: 265 },
       { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 2, 이름: '김나라', 좌석번호: 266 },
@@ -56,16 +64,17 @@
       { 차시: '1차', 구역: '남', 학년: 3, 반: 1, 번호: 21, 이름: '강동협', 좌석번호: 1 },
       { 차시: '2차', 구역: '남', 학년: 1, 반: 8, 번호: 33, 이름: '채희승', 좌석번호: 223 },
       { 차시: '2차', 구역: '남', 학년: '', 반: '', 번호: '', 이름: '여분좌석', 좌석번호: 225 },
+      { 차시: '2차', 구역: '남', 학년: '', 반: '', 번호: '', 이름: '여분좌석', 좌석번호: 235 },
       { 차시: '2차', 구역: '여', 학년: 1, 반: 9, 번호: 1, 이름: '강다연', 좌석번호: 470 },
     ];
 
+    // --- 메인 앱 컴포넌트 ---
     function App() {
       const [activeTab, setActiveTab] = useState('search');
       const [students, setStudents] = useState([]);
       const [penalties, setPenalties] = useState([]);
       const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
 
-      // 로컬 스토리지 데이터 불러오기
       useEffect(() => {
         const savedStudents = localStorage.getItem('lunchStudents');
         const savedPenalties = localStorage.getItem('lunchPenalties');
@@ -94,12 +103,10 @@
         }, 100);
       }, []);
 
-      // 벌점 데이터 자동 저장
       useEffect(() => {
         localStorage.setItem('lunchPenalties', JSON.stringify(penalties));
       }, [penalties]);
 
-      // 강제 업데이트(새로고침) 기능
       const handleForceUpdate = () => {
         window.location.replace(window.location.pathname + '?update=' + new Date().getTime());
       };
@@ -129,7 +136,7 @@
         <div className="max-w-md mx-auto bg-slate-50/50 min-h-screen shadow-2xl relative font-sans text-slate-800 break-keep">
           
           <header className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white p-4 shadow-lg rounded-b-[2rem] sticky top-0 z-20 flex justify-between items-center px-5">
-            <div className="w-[76px]"></div> {/* 업데이트 버튼과 대칭을 위한 여백 */}
+            <div className="w-[76px]"></div>
             <h1 className="text-xl font-extrabold flex items-center justify-center gap-2 tracking-tight">
               <Users size={26} className="opacity-90" /> 스마트 급식 지도
             </h1>
@@ -157,17 +164,15 @@
     // --- 1. 검색 탭 ---
     function SearchTab({ students }) {
       const [shift, setShift] = useState('1차');
-      const [searchMode, setSearchMode] = useState('name'); // 기본값을 이름 검색으로 변경 가능
+      const [searchMode, setSearchMode] = useState('name');
       const [searchQuery, setSearchQuery] = useState('');
       const [result, setResult] = useState(null);
 
       const handleSearch = () => {
         if (!searchQuery.trim()) return setResult(null);
 
-        // 1. 이름으로 찾기
         if (searchMode === 'name') {
           const q = searchQuery.trim();
-          // 이름에 검색어가 포함되고 여분좌석이 아닌 학생 모두 찾기
           const foundStudents = students.filter(s => s.이름 && String(s.이름).includes(q) && !String(s.이름).includes('여분'));
           
           if (foundStudents.length > 0) {
@@ -176,7 +181,6 @@
             setResult({ type: 'NOT_FOUND' });
           }
         } 
-        // 2. 학번으로 찾기
         else if (searchMode === 'student') {
           const cleanQ = searchQuery.replace(/[^0-9]/g, '');
           let g, c, n, foundOverall = null;
@@ -193,7 +197,6 @@
             else setResult({ type: 'WRONG_SHIFT', data: foundOverall });
           } else setResult({ type: 'NOT_FOUND' });
         } 
-        // 3. 좌석 번호로 찾기
         else {
           const seatNum = parseInt(searchQuery);
           const seatStudents = students.filter(s => parseInt(s.좌석번호) === seatNum);
@@ -209,15 +212,12 @@
 
       return (
         <div className="space-y-6 flex flex-col items-center w-full animate-in fade-in duration-500">
-          
-          {/* 세련된 검색 모드 토글 버튼 (3개) */}
           <div className="flex bg-slate-200/70 p-1.5 rounded-2xl w-full gap-1 shadow-inner overflow-hidden">
             <button onClick={() => handleModeChange('student')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'student' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>학번으로 찾기</button>
             <button onClick={() => handleModeChange('name')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'name' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>이름으로 찾기</button>
             <button onClick={() => handleModeChange('seat')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'seat' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>좌석번호로 찾기</button>
           </div>
 
-          {/* 학번 검색 시에만 차시 선택 보여주기 */}
           {searchMode === 'student' && (
             <div className="flex bg-white/80 backdrop-blur-sm border border-slate-200 p-1.5 rounded-2xl w-full gap-1.5 shadow-sm">
               {SHIFT_INFO.map(s => (
@@ -255,7 +255,6 @@
               </div>
             )}
 
-            {/* 새롭게 추가된 이름 검색 결과 영역 (여러 명이 나와도 예쁘게 나열됩니다) */}
             {result?.type === 'NAME_SUCCESS' && (
               <div className="w-full space-y-4 animate-in slide-in-from-bottom-6 duration-500">
                 <div className="bg-slate-800 p-4 rounded-3xl shadow-lg text-center relative overflow-hidden mb-2">
@@ -517,6 +516,7 @@
       );
     }
 
+    // React 18 렌더링 방식
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
