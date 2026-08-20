@@ -1,524 +1,656 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- 스마트폰 캐시 방지 메타 태그 -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>스마트 급식 지도</title>
-  
-  <!-- 스타일 & 아이콘 폰트 (Tailwind CSS) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 리액트 구동을 위한 기본 엔진 (순수 브라우저용) -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- 에러를 방지하기 위해 가장 안정적인 버전의 Babel 엔진 사용 -->
-  <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
-  
-  <!-- 엑셀 파일 분석을 위한 모듈 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  
-  <style>
-    /* 스마트폰 하단 여백 보호 */
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-    body { -webkit-tap-highlight-color: transparent; }
-  </style>
-</head>
-<body class="bg-slate-100 text-slate-800">
-  <div id="root"></div>
-
-  <!-- 순수 브라우저 스크립트 실행 (에러를 유발하던 data-type 속성 제거) -->
-  <script type="text/babel">
-    // 전역 변수에서 React Hook 추출 (import 사용 금지)
-    const { useState, useEffect, useRef } = React;
-
-    // --- 수제작 SVG 아이콘 컴포넌트 모음 (lucide-react import 에러 방지용) ---
-    const Search = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
-    const Armchair = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 5 12.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>);
-    const AlertTriangle = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>);
-    const Upload = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>);
-    const Users = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
-    const UserX = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>);
-    const FileSpreadsheet = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>);
-    const Trash2 = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>);
-    const CheckCircle2 = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>);
-    const ChevronDown = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"/></svg>);
-    const Plus = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
-    const RefreshCw = ({ size = 24, className = '', strokeWidth = 2 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>);
-
-    // --- 지정여분좌석 및 휠체어 좌석 상수 정의 복구 ---
-    const DESIGNATED_SPARES = [208, 209, 210, 235, 236, 237, 286, 287, 288, 310, 311, 312, 499, 500, 501, 502, 503, 504];
-    const WHEELCHAIR_SEATS = [262, 263, 264];
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2학기 스마트 급식 지도</title>
     
-    const SHIFT_INFO = [
-      { id: '1차', title: '1차 급식', desc: '3학년 1~10반, 2학년 1~5반' },
-      { id: '2차', title: '2차 급식', desc: '2학년 6~10반, 1학년 1~10반' }
-    ];
-    const INITIAL_DATA = [
-      { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 1, 이름: '김가은', 좌석번호: 265 },
-      { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 2, 이름: '김나라', 좌석번호: 266 },
-      { 차시: '1차', 구역: '여', 학년: 3, 반: 1, 번호: 15, 이름: '', 좌석번호: 279 },
-      { 차시: '1차', 구역: '남', 학년: 3, 반: 1, 번호: 21, 이름: '강동협', 좌석번호: 1 },
-      { 차시: '2차', 구역: '남', 학년: 1, 반: 8, 번호: 33, 이름: '채희승', 좌석번호: 223 },
-      { 차시: '2차', 구역: '남', 학년: '', 반: '', 번호: '', 이름: '여분좌석', 좌석번호: 225 },
-      { 차시: '2차', 구역: '남', 학년: '', 반: '', 번호: '', 이름: '여분좌석', 좌석번호: 235 },
-      { 차시: '2차', 구역: '여', 학년: 1, 반: 9, 번호: 1, 이름: '강다연', 좌석번호: 470 },
-    ];
-
-    // --- 메인 앱 컴포넌트 ---
-    function App() {
-      const [activeTab, setActiveTab] = useState('search');
-      const [students, setStudents] = useState([]);
-      const [penalties, setPenalties] = useState([]);
-      const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
-
-      useEffect(() => {
-        const savedStudents = localStorage.getItem('lunchStudents');
-        const savedPenalties = localStorage.getItem('lunchPenalties');
+    <!-- 엑셀 파싱을 위한 SheetJS 라이브러리 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <!-- 세련된 UI를 위한 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            background-color: #f3f4f6; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(5px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .nav-btn.active { color: #2563eb; font-weight: bold; }
+        .nav-btn { color: #6b7280; transition: all 0.2s; }
         
-        if (savedStudents) setStudents(JSON.parse(savedStudents));
-        else setStudents(INITIAL_DATA);
+        /* 커스텀 모달 애니메이션 */
+        #customModal { transition: opacity 0.2s; }
+    </style>
+</head>
+<body class="text-gray-800 pb-20">
 
-        if (savedPenalties) {
-          const parsed = JSON.parse(savedPenalties);
-          const merged = [];
-          parsed.forEach(p => {
-            const pId = p.id && p.id.toString().includes('-') ? p.id : `${p.학년}-${p.반}-${p.번호}`;
-            const pDates = p.dates || (p.date ? [p.date] : []);
-            const existing = merged.find(m => m.id === pId);
-            if (existing) existing.dates = [...new Set([...existing.dates, ...pDates])].sort();
-            else merged.push({ ...p, id: pId, dates: pDates });
-          });
-          setPenalties(merged);
-        }
+    <header class="bg-blue-600 text-white text-center py-4 font-bold text-xl sticky top-0 z-10 shadow-md">
+        2학기 스마트 급식 지도
+    </header>
 
-        const checkXLSX = setInterval(() => {
-          if (window.XLSX) {
-            setIsXlsxLoaded(true);
-            clearInterval(checkXLSX);
-          }
-        }, 100);
-      }, []);
-
-      useEffect(() => {
-        localStorage.setItem('lunchPenalties', JSON.stringify(penalties));
-      }, [penalties]);
-
-      const handleForceUpdate = () => {
-        window.location.replace(window.location.pathname + '?update=' + new Date().getTime());
-      };
-
-      const Navigation = () => (
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-md border-t border-slate-100 flex justify-around pb-safe z-30 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] rounded-t-3xl px-2">
-          <NavButton icon={<Search />} label="검색" tabId="search" />
-          <NavButton icon={<Armchair />} label="여분좌석" tabId="spare" />
-          <NavButton icon={<AlertTriangle />} label="벌점관리" tabId="penalty" />
-          <NavButton icon={<Upload />} label="데이터" tabId="data" />
-        </div>
-      );
-
-      const NavButton = ({ icon, label, tabId }) => {
-        const isActive = activeTab === tabId;
-        return (
-          <button onClick={() => setActiveTab(tabId)} className={`flex-1 flex flex-col items-center py-4 text-[11px] font-bold transition-all duration-300 whitespace-nowrap ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
-            <div className={`mb-1.5 transition-all duration-300 ${isActive ? 'scale-125 drop-shadow-md' : 'scale-100 opacity-80'}`}>
-              {React.cloneElement(icon, { size: 22, strokeWidth: isActive ? 2.5 : 2 })}
-            </div>
-            {label}
-          </button>
-        );
-      };
-
-      return (
-        <div className="max-w-md mx-auto bg-slate-50/50 min-h-screen shadow-2xl relative font-sans text-slate-800 break-keep">
-          
-          <header className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white p-4 shadow-lg rounded-b-[2rem] sticky top-0 z-20 flex justify-between items-center px-5">
-            <div className="w-[76px]"></div>
-            <h1 className="text-xl font-extrabold flex items-center justify-center gap-2 tracking-tight">
-              <Users size={26} className="opacity-90" /> 스마트 급식 지도
-            </h1>
-            <button 
-              onClick={handleForceUpdate} 
-              className="flex items-center gap-1 bg-white/20 hover:bg-white/30 active:scale-95 px-2.5 py-1.5 rounded-full transition-all shadow-sm border border-white/10" 
-              title="최신 버전으로 새로고침"
-            >
-              <RefreshCw size={13} strokeWidth={2.5} />
-              <span className="text-[11px] font-black tracking-tight pt-px">업데이트</span>
-            </button>
-          </header>
-
-          <main className="p-5 pb-28 min-h-[calc(100vh-80px)]">
-            {activeTab === 'search' && <SearchTab students={students} />}
-            {activeTab === 'spare' && <SpareSeatsTab students={students} />}
-            {activeTab === 'penalty' && <PenaltyTab students={students} penalties={penalties} setPenalties={setPenalties} />}
-            {activeTab === 'data' && <DataTab setStudents={setStudents} isLoaded={isXlsxLoaded} />}
-          </main>
-          <Navigation />
-        </div>
-      );
-    }
-
-    // --- 1. 검색 탭 ---
-    function SearchTab({ students }) {
-      const [shift, setShift] = useState('1차');
-      const [searchMode, setSearchMode] = useState('name');
-      const [searchQuery, setSearchQuery] = useState('');
-      const [result, setResult] = useState(null);
-
-      const handleSearch = () => {
-        if (!searchQuery.trim()) return setResult(null);
-
-        if (searchMode === 'name') {
-          const q = searchQuery.trim();
-          const foundStudents = students.filter(s => s.이름 && String(s.이름).includes(q) && !String(s.이름).includes('여분'));
-          
-          if (foundStudents.length > 0) {
-            setResult({ type: 'NAME_SUCCESS', data: foundStudents });
-          } else {
-            setResult({ type: 'NOT_FOUND' });
-          }
-        } 
-        else if (searchMode === 'student') {
-          const cleanQ = searchQuery.replace(/[^0-9]/g, '');
-          let g, c, n, foundOverall = null;
-          if (cleanQ.length >= 3 && cleanQ.length <= 5) {
-            g = parseInt(cleanQ.substring(0, 1));
-            if (cleanQ.length === 3) { c = parseInt(cleanQ.substring(1, 2)); n = parseInt(cleanQ.substring(2, 3)); } 
-            else if (cleanQ.length === 4) { c = parseInt(cleanQ.substring(1, 3)) > 15 ? parseInt(cleanQ.substring(1, 2)) : parseInt(cleanQ.substring(1, 2)); n = parseInt(cleanQ.substring(cleanQ.length - 2)); } 
-            else { c = parseInt(cleanQ.substring(1, 3)); n = parseInt(cleanQ.substring(3, 5)); }
-            foundOverall = students.find(s => parseInt(s.학년) === g && parseInt(s.반) === c && parseInt(s.번호) === n);
-          }
-
-          if (foundOverall) {
-            if (foundOverall.차시 === shift) setResult({ type: 'STUDENT_SUCCESS', data: foundOverall });
-            else setResult({ type: 'WRONG_SHIFT', data: foundOverall });
-          } else setResult({ type: 'NOT_FOUND' });
-        } 
-        else {
-          const seatNum = parseInt(searchQuery);
-          const seatStudents = students.filter(s => parseInt(s.좌석번호) === seatNum);
-          if (seatStudents.length > 0) {
-            const student1 = seatStudents.find(s => s.차시 === '1차');
-            const student2 = seatStudents.find(s => s.차시 === '2차');
-            setResult({ type: 'SEAT_SUCCESS', data1: student1, data2: student2, seatNum });
-          } else setResult({ type: 'NOT_FOUND' });
-        }
-      };
-
-      const handleModeChange = (mode) => { setSearchMode(mode); setSearchQuery(''); setResult(null); };
-
-      return (
-        <div className="space-y-6 flex flex-col items-center w-full animate-in fade-in duration-500">
-          <div className="flex bg-slate-200/70 p-1.5 rounded-2xl w-full gap-1 shadow-inner overflow-hidden">
-            <button onClick={() => handleModeChange('student')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'student' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>학번으로 찾기</button>
-            <button onClick={() => handleModeChange('name')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'name' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>이름으로 찾기</button>
-            <button onClick={() => handleModeChange('seat')} className={`flex-1 py-3 text-[12px] sm:text-[13px] font-bold rounded-xl transition-all duration-300 whitespace-nowrap px-1 ${searchMode === 'seat' ? 'bg-white text-indigo-700 shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>좌석번호로 찾기</button>
-          </div>
-
-          {searchMode === 'student' && (
-            <div className="flex bg-white/80 backdrop-blur-sm border border-slate-200 p-1.5 rounded-2xl w-full gap-1.5 shadow-sm">
-              {SHIFT_INFO.map(s => (
-                <button key={s.id} onClick={() => { setShift(s.id); setResult(null); }} className={`flex-1 py-3 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${shift === s.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'border border-transparent'}`}>
-                  <span className={`text-[14px] sm:text-[15px] font-extrabold whitespace-nowrap mb-0.5 ${shift === s.id ? 'text-indigo-700' : 'text-slate-500'}`}>{s.title}</span>
-                  <span className={`text-[10px] sm:text-[11px] leading-tight tracking-tight ${shift === s.id ? 'text-indigo-500 font-medium' : 'text-slate-400'}`}>{s.desc}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="relative w-full group">
-            <input 
-              type={searchMode === 'seat' ? 'number' : 'text'} 
-              placeholder={searchMode === 'student' ? "학년 반 번호 입력 (예: 30115)" : searchMode === 'name' ? "학생 이름 입력 (예: 홍길동)" : "좌석 번호 입력 (예: 250)"} 
-              className="w-full pl-5 pr-14 py-4 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all text-[15px] sm:text-lg font-bold shadow-sm placeholder:font-medium placeholder:text-slate-300" 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()} 
-            />
-            <button onClick={handleSearch} className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95 flex items-center justify-center"><Search size={22} strokeWidth={2.5} /></button>
-          </div>
-
-          <div className="w-full">
-            {result?.type === 'NOT_FOUND' && (
-              <div className="bg-rose-50 text-rose-600 p-6 rounded-3xl text-center flex flex-col items-center gap-3 border border-rose-100 shadow-sm animate-in zoom-in-95 duration-300">
-                <div className="bg-rose-100 p-3 rounded-full"><UserX size={32} /></div><p className="font-bold text-[15px]">검색 결과가 없습니다.</p>
-              </div>
-            )}
-            
-            {result?.type === 'WRONG_SHIFT' && (
-              <div className="bg-orange-50 p-6 rounded-3xl text-center flex flex-col items-center gap-3 border border-orange-200 shadow-sm animate-in zoom-in-95 duration-300">
-                <div className="bg-orange-100 text-orange-600 p-3 rounded-full"><AlertTriangle size={32} /></div>
-                <div className="space-y-1"><p className="font-medium text-orange-800 text-[15px] break-keep">해당 학생은 <span className="font-extrabold text-orange-600 text-lg mx-1">{shift}</span> 대상자가 아닙니다.</p><p className="text-[13px] text-orange-700 font-bold bg-orange-100/50 inline-block px-3 py-1 rounded-full mt-2">올바른 차시: {result.data.차시}</p></div>
-              </div>
-            )}
-
-            {result?.type === 'NAME_SUCCESS' && (
-              <div className="w-full space-y-4 animate-in slide-in-from-bottom-6 duration-500">
-                <div className="bg-slate-800 p-4 rounded-3xl shadow-lg text-center relative overflow-hidden mb-2">
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-slate-700"></div>
-                  <div className="relative z-10">
-                    <p className="text-[13px] text-slate-300 font-bold mb-1 tracking-widest uppercase">검색된 학생 수</p>
-                    <div className="text-3xl font-black text-white drop-shadow-md">{result.data.length}명</div>
-                  </div>
-                </div>
-                {result.data.map((student, idx) => (
-                  <div key={idx} className="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-100 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                    <div className="flex justify-between items-end mb-2">
-                      <div className="text-left">
-                        <span className="bg-indigo-100 text-indigo-700 text-[11px] font-extrabold px-3 py-1.5 rounded-lg mb-3 inline-block shadow-sm tracking-wide">{student.차시} 급식</span>
-                        <p className="text-[13px] font-bold text-slate-400 mb-0.5 whitespace-nowrap">{student.학년}학년 {student.반}반 {student.번호}번</p>
-                        <p className="text-3xl font-black text-slate-800 tracking-tight whitespace-nowrap">{student.이름}</p>
-                      </div>
-                      <div className="text-right flex flex-col items-end">
-                        <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-black text-white shadow-lg transform rotate-3 transition-transform hover:rotate-0 ${student.구역 === '남' ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-pink-400 to-rose-500'}`}>{student.좌석번호}</div>
-                        <p className="text-[12px] font-extrabold text-slate-400 mt-3 bg-slate-100 px-3 py-1 rounded-lg whitespace-nowrap">{student.구역}학생 구역</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {result?.type === 'STUDENT_SUCCESS' && (
-              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-100 animate-in slide-in-from-bottom-6 duration-500 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                <div className="flex justify-between items-end mb-2">
-                  <div className="text-left">
-                    <span className="bg-indigo-100 text-indigo-700 text-[11px] font-extrabold px-3 py-1.5 rounded-lg mb-3 inline-block shadow-sm tracking-wide">{result.data.차시} 급식</span>
-                    {result.data.학년 ? (<><p className="text-[13px] font-bold text-slate-400 mb-0.5 whitespace-nowrap">{result.data.학년}학년 {result.data.반}반 {result.data.번호}번</p><p className="text-3xl font-black text-slate-800 tracking-tight whitespace-nowrap">{result.data.이름}</p></>) : (<><p className="text-[13px] font-bold text-slate-400 mb-0.5">배정 미상</p><p className="text-3xl font-black text-slate-800 tracking-tight whitespace-nowrap">이름 없음</p><p className="text-xs text-indigo-400 font-medium mt-1">여분좌석 추정</p></>)}
-                  </div>
-                  <div className="text-right flex flex-col items-end">
-                    <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-black text-white shadow-lg transform rotate-3 transition-transform hover:rotate-0 ${result.data.구역 === '남' ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-pink-400 to-rose-500'}`}>{result.data.좌석번호}</div>
-                    <p className="text-[12px] font-extrabold text-slate-400 mt-3 bg-slate-100 px-3 py-1 rounded-lg whitespace-nowrap">{result.data.구역}학생 구역</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {result?.type === 'SEAT_SUCCESS' && (
-              <div className="w-full space-y-4 animate-in slide-in-from-bottom-6 duration-500">
-                <div className="bg-slate-800 p-5 rounded-3xl shadow-lg text-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-slate-700"></div>
-                  <div className="relative z-10"><p className="text-[13px] text-slate-300 font-bold mb-1 tracking-widest uppercase">조회한 좌석 번호</p><div className="text-5xl font-black text-white drop-shadow-md">{result.seatNum}</div></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <ShiftSeatCard shiftName="1차 급식" data={result.data1} />
-                  <ShiftSeatCard shiftName="2차 급식" data={result.data2} />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    function ShiftSeatCard({ shiftName, data }) {
-      if (!data) return (<div className="bg-white border border-slate-100 p-5 rounded-3xl flex flex-col items-center justify-center text-center h-full min-h-[140px] shadow-sm"><span className="bg-slate-100 text-slate-500 text-[11px] font-extrabold px-3 py-1.5 rounded-lg mb-3 whitespace-nowrap">{shiftName}</span><p className="text-[13px] text-slate-400 font-bold break-keep">배정된<br/>학생 없음</p></div>);
-      const isMale = data.구역 === '남';
-      return (
-        <div className={`p-5 rounded-3xl border flex flex-col items-center text-center shadow-md h-full transition-transform hover:-translate-y-1 ${isMale ? 'bg-gradient-to-b from-white to-blue-50 border-blue-100' : 'bg-gradient-to-b from-white to-pink-50 border-pink-100'}`}>
-          <span className={`text-white text-[11px] font-extrabold px-3 py-1.5 rounded-lg shadow-sm mb-4 whitespace-nowrap ${isMale ? 'bg-blue-500' : 'bg-pink-500'}`}>{shiftName}</span>
-          {data.학년 ? (<><p className="text-[11px] font-bold text-slate-500 mb-1 whitespace-nowrap">{data.학년}학년 {data.반}반 {data.번호}번</p><p className={`text-2xl font-black tracking-tight whitespace-nowrap ${isMale ? 'text-blue-800' : 'text-pink-800'}`}>{data.이름}</p></>) : (<><p className="text-lg font-black text-slate-700 mb-1 whitespace-nowrap">이름 없음</p><p className="text-[11px] text-slate-400 font-medium">(여분좌석)</p></>)}
-          <p className="text-[10px] font-bold text-slate-400 mt-auto pt-4 whitespace-nowrap">{data.구역}학생 구역</p>
-        </div>
-      );
-    }
-
-    // --- 2. 여분 좌석 탭 ---
-    function SpareSeatsTab({ students }) {
-      const [shift, setShift] = useState('1차');
-      
-      const getSpareSeats = (zone) => {
-        const seatZones = {};
-        students.forEach(s => {
-          if (s.좌석번호 && s.구역) seatZones[parseInt(s.좌석번호)] = s.구역;
-        });
+    <main class="p-4 max-w-md mx-auto">
         
-        const getZone = (num) => seatZones[num] || (num <= 250 ? '남' : '여');
-
-        const regularSpares = students.filter(s => 
-          s.차시 === shift && 
-          s.구역 === zone && 
-          (!s.이름 || String(s.이름).trim() === '' || String(s.이름).includes('여분')) &&
-          !DESIGNATED_SPARES.includes(parseInt(s.좌석번호)) &&
-          !WHEELCHAIR_SEATS.includes(parseInt(s.좌석번호))
-        ).map(s => parseInt(s.좌석번호));
-
-        const designated = DESIGNATED_SPARES.filter(num => getZone(num) === zone);
-        const wheelchair = WHEELCHAIR_SEATS.filter(num => getZone(num) === zone);
-
-        return Array.from(new Set([...regularSpares, ...designated, ...wheelchair])).sort((a, b) => a - b);
-      };
-
-      const maleSpares = getSpareSeats('남');
-      const femaleSpares = getSpareSeats('여');
-
-      const SeatBadge = ({ seatNum }) => {
-        const isDesignated = DESIGNATED_SPARES.includes(seatNum);
-        const isWheelchair = WHEELCHAIR_SEATS.includes(seatNum);
-
-        let bgClass = 'bg-white border-slate-200 text-slate-700';
-        let label = null;
-
-        if (isWheelchair) {
-          bgClass = 'bg-gradient-to-br from-pink-400 to-rose-500 border-rose-500 text-white shadow-md';
-          label = <span className="text-[10px] italic mt-1 font-bold bg-black/20 px-2 py-0.5 rounded-full whitespace-nowrap">휠체어</span>;
-        } else if (isDesignated) {
-          bgClass = 'bg-gradient-to-br from-emerald-400 to-green-500 border-green-500 text-white shadow-md';
-          label = <span className="text-[9px] italic mt-1 font-bold bg-black/20 px-1.5 py-0.5 rounded-full whitespace-nowrap tracking-tighter">1, 2차여분</span>;
-        }
-
-        return (
-          <div className={`relative flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm border transition-all hover:scale-105 ${bgClass}`}>
-            <span className="text-2xl font-black">{seatNum}</span>
-            {label}
-          </div>
-        );
-      };
-
-      return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-          <div className="flex bg-white/80 backdrop-blur-sm border border-slate-200 p-1.5 rounded-2xl w-full gap-1.5 shadow-sm">
-            {SHIFT_INFO.map(s => (
-              <button key={s.id} onClick={() => setShift(s.id)} className={`flex-1 py-3 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${shift === s.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'border border-transparent'}`}>
-                <span className={`text-[14px] sm:text-[15px] font-extrabold whitespace-nowrap mb-0.5 ${shift === s.id ? 'text-indigo-700' : 'text-slate-500'}`}>{s.id} 여분</span><span className={`text-[10px] sm:text-[11px] leading-tight tracking-tight ${shift === s.id ? 'text-indigo-500 font-medium' : 'text-slate-400'}`}>{s.desc}</span>
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-b from-blue-50 to-white p-5 rounded-3xl border border-blue-100 shadow-sm"><h3 className="text-blue-800 font-extrabold mb-4 flex items-center gap-2 text-[15px] whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-sm"></span> 남학생</h3><div className="grid grid-cols-2 gap-3">{maleSpares.map((seatNum, idx) => <SeatBadge key={`m-${idx}`} seatNum={seatNum} />)}{maleSpares.length === 0 && <p className="text-[12px] font-medium text-slate-400 col-span-2 py-4 text-center break-keep">여분 좌석이 없습니다.</p>}</div></div>
-            <div className="bg-gradient-to-b from-pink-50 to-white p-5 rounded-3xl border border-pink-100 shadow-sm"><h3 className="text-pink-800 font-extrabold mb-4 flex items-center gap-2 text-[15px] whitespace-nowrap"><span className="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block shadow-sm"></span> 여학생</h3><div className="grid grid-cols-2 gap-3">{femaleSpares.map((seatNum, idx) => <SeatBadge key={`f-${idx}`} seatNum={seatNum} />)}{femaleSpares.length === 0 && <p className="text-[12px] font-medium text-slate-400 col-span-2 py-4 text-center break-keep">여분 좌석이 없습니다.</p>}</div></div>
-          </div>
-        </div>
-      );
-    }
-
-    // --- 3. 벌점 관리 탭 ---
-    function PenaltyTab({ students, penalties, setPenalties }) {
-      const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-      const [grade, setGrade] = useState('');
-      const [cls, setCls] = useState('');
-      const [num, setNum] = useState('');
-      const [feedback, setFeedback] = useState({ type: '', msg: '', id: null });
-
-      useEffect(() => {
-        if (grade && cls && num) {
-          const student = students.find(s => parseInt(s.학년) === parseInt(grade) && parseInt(s.반) === parseInt(cls) && parseInt(s.번호) === parseInt(num));
-          if (!student) { setFeedback({ type: 'error', msg: '해당 학생을 찾을 수 없습니다.', id: null }); setTimeout(() => setFeedback({ type: '', msg: '', id: null }), 3000); } 
-          else {
-            const studentId = `${grade}-${cls}-${num}`;
-            const existingIndex = penalties.findIndex(p => p.id === studentId);
-            if (existingIndex >= 0) { setFeedback({ type: 'error', msg: '이미 등록된 학생입니다. 아래 명단에서 클릭하여 날짜를 추가하세요.', id: null }); setTimeout(() => setFeedback({ type: '', msg: '', id: null }), 4000); } 
-            else {
-              const newPenalty = { id: studentId, 학년: grade, 반: cls, 번호: num, 이름: student.이름 || '이름없음', 좌석번호: student.좌석번호, dates: [date] };
-              setPenalties(prev => [newPenalty, ...prev]);
-              setFeedback({ type: 'success', msg: `${grade}학년 ${cls}반 ${num}번 (${student.이름 || '이름없음'}) 등록 완료!`, id: studentId });
-            }
-          }
-          setGrade(''); setCls(''); setNum('');
-        }
-      }, [grade, cls, num, students, penalties, date, setPenalties]);
-
-      const handleCardClick = (id) => { setPenalties(prev => prev.map(p => { if (p.id === id) { if (!p.dates.includes(date)) return { ...p, dates: [...p.dates, date].sort() }; else alert(`선택하신 날짜(${date})는 이미 기록되어 있습니다.`); } return p; })); };
-      const handleRemoveDate = (e, id, targetDate) => { e.stopPropagation(); if(window.confirm(`해당 날짜(${targetDate})의 위반 기록을 삭제하시겠습니까?`)) { setPenalties(prev => prev.map(p => { if (p.id === id) return { ...p, dates: p.dates.filter(d => d !== targetDate) }; return p; })); } };
-      const handleDeleteStudent = (e, id) => { e.stopPropagation(); if(window.confirm('이 학생의 모든 벌점 기록을 삭제하시겠습니까?')) { setPenalties(penalties.filter(p => p.id !== id)); } };
-
-      return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-          <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-lg border border-slate-100 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 to-rose-600"></div>
-            <h2 className="text-[17px] font-black text-slate-800 mb-5 flex items-center gap-2 whitespace-nowrap"><div className="bg-rose-100 text-rose-600 p-1.5 rounded-lg"><AlertTriangle size={20} strokeWidth={2.5}/></div> 위반자 등록</h2>
-            <div className="space-y-5">
-              <div><label className="block text-[12px] font-bold text-slate-500 mb-1.5 ml-1">위반 날짜 설정</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 outline-none transition-all font-semibold text-slate-700 cursor-pointer" /></div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="relative"><label className="block text-[12px] font-bold text-slate-500 mb-1.5 ml-1 text-center">학년</label><select value={grade} onChange={e=>setGrade(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-lg font-bold focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 outline-none transition-all appearance-none cursor-pointer text-slate-700"><option value="">선택</option>{[1,2,3].map(g => <option key={g} value={g}>{g}학년</option>)}</select><ChevronDown className="absolute right-2 bottom-4 text-slate-400 pointer-events-none" size={16}/></div>
-                <div className="relative"><label className="block text-[12px] font-bold text-slate-500 mb-1.5 ml-1 text-center">반</label><select value={cls} onChange={e=>setCls(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-lg font-bold focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 outline-none transition-all appearance-none cursor-pointer text-slate-700"><option value="">선택</option>{Array.from({length: 10}, (_, i) => i + 1).map(c => <option key={c} value={c}>{c}반</option>)}</select><ChevronDown className="absolute right-2 bottom-4 text-slate-400 pointer-events-none" size={16}/></div>
-                <div className="relative"><label className="block text-[12px] font-bold text-slate-500 mb-1.5 ml-1 text-center">번호</label><select value={num} onChange={e=>setNum(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-lg font-bold focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 outline-none transition-all appearance-none cursor-pointer text-slate-700"><option value="">선택</option>{Array.from({length: 40}, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}번</option>)}</select><ChevronDown className="absolute right-2 bottom-4 text-slate-400 pointer-events-none" size={16}/></div>
-              </div>
-              {feedback.msg && (
-                <div className={`flex justify-between items-center p-4 rounded-2xl border shadow-sm animate-in fade-in slide-in-from-top-2 ${feedback.type === 'error' ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                  <p className={`text-[13px] font-bold leading-tight flex-1 ${feedback.type === 'error' ? 'text-rose-600' : 'text-emerald-700'}`}>{feedback.msg}</p>
-                  {feedback.type === 'success' && feedback.id && (<button onClick={() => { setPenalties(prev => prev.filter(p => p.id !== feedback.id)); setFeedback({ type: 'error', msg: '잘못된 등록이 삭제(취소)되었습니다.', id: null }); setTimeout(() => setFeedback({ type: '', msg: '', id: null }), 3000); }} className="bg-white text-rose-500 border border-rose-200 px-3 py-2 rounded-xl text-[12px] font-black hover:bg-rose-50 transition-colors shadow-sm whitespace-nowrap ml-3 shrink-0 active:scale-95 flex items-center gap-1.5"><Trash2 size={14} strokeWidth={2.5}/> 잘못 등록했나요?</button>)}
-                </div>
-              )}
+        <!-- 1. 학생/좌석 검색 탭 -->
+        <div id="tab-search" class="tab-content active space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-blue-500 pb-2 inline-block">학생 / 좌석 검색</h2>
+            <div class="flex gap-2">
+                <input type="text" id="searchInput" placeholder="학번, 이름, 좌석번호" class="w-full border p-3 rounded-lg shadow-sm text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" inputmode="search" onkeypress="if(event.key==='Enter') performSearch()">
+                <button onclick="performSearch()" class="bg-blue-500 text-white font-bold px-5 rounded-lg shadow hover:bg-blue-600 whitespace-nowrap">검색</button>
             </div>
-          </div>
-          <div>
-            <div className="flex justify-between items-end mb-4 px-2"><h3 className="text-[15px] font-black text-slate-700">누가 기록</h3><span className="text-[12px] font-bold text-slate-400 bg-slate-200/50 px-3 py-1 rounded-full whitespace-nowrap">총 {penalties.length}명</span></div>
-            {penalties.length === 0 ? (<div className="bg-white/50 border border-slate-200 border-dashed rounded-3xl p-8 text-center text-slate-400 font-medium text-[13px]">등록된 위반 학생이 없습니다.</div>) : (
-              <div className="space-y-3">
-                {penalties.map(p => (
-                  <div key={p.id} onClick={() => handleCardClick(p.id)} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3 transition-all hover:shadow-md hover:border-rose-300 cursor-pointer group">
-                    <div className="flex justify-between items-start">
-                      <div><p className="font-black text-slate-800 text-[16px] whitespace-nowrap mb-1">{p.학년}학년 {p.반}반 {p.번호}번 <span className="text-indigo-600 ml-1.5">{p.이름}</span></p><p className="text-[12px] text-slate-400 font-semibold whitespace-nowrap">원래 좌석: <span className="text-slate-600">{p.좌석번호}번</span></p></div>
-                      <button onClick={(e) => handleDeleteStudent(e, p.id)} className="p-2.5 bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 rounded-xl transition-colors shrink-0"><Trash2 size={18} strokeWidth={2.5}/></button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 items-center bg-slate-50 p-3 rounded-2xl border border-transparent group-hover:border-rose-100 transition-colors">
-                      <span className="text-[11px] font-extrabold text-slate-500 mr-1 flex items-center gap-1"><Plus size={12} className="text-rose-500 group-hover:scale-125 transition-transform" /> 누적 위반 ({p.dates.length}건)</span>
-                      {p.dates.length === 0 && <span className="text-[11px] text-slate-400 italic">클릭하여 날짜 추가</span>}
-                      {p.dates.map(d => (<span key={d} onClick={(e) => handleRemoveDate(e, p.id, d)} className="text-[11px] text-rose-600 font-extrabold bg-white border border-rose-200 px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1 hover:bg-rose-50 hover:border-rose-300 transition-colors cursor-pointer">{d}</span>))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <div id="searchResult" class="mt-4 min-h-[100px]">
+                <p class="text-gray-500 text-center py-10">검색어를 입력해주세요.</p>
+            </div>
         </div>
-      );
-    }
 
-    // --- 4. 데이터 관리 탭 ---
-    function DataTab({ setStudents, isLoaded }) {
-      const fileInputRef = useRef(null);
-      const [status, setStatus] = useState('');
+        <!-- 2. 여분 좌석 탭 -->
+        <div id="tab-spare" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-green-500 pb-2 inline-block">여분 좌석 조회</h2>
+            <div class="flex gap-2">
+                <button id="btnSpare1" onclick="showSpare('1차')" class="flex-1 bg-green-500 text-white font-bold py-3 rounded-lg shadow transition-all border-4 border-red-600">1차 여분좌석</button>
+                <button id="btnSpare2" onclick="showSpare('2차')" class="flex-1 bg-purple-500 text-white font-bold py-3 rounded-lg shadow opacity-50 transition-all border-4 border-transparent">2차 여분좌석</button>
+            </div>
+            <div id="spareInfoText" class="text-xs text-gray-500 italic text-center">3학년1반~10반 2학년 6반~10반</div>
+            
+            <div class="flex gap-2 mt-4">
+                <button id="btnSpareM" onclick="filterSpare('남')" class="flex-1 border-2 border-blue-400 text-blue-600 bg-blue-50 py-2 rounded-lg font-bold transition-colors">남학생 (남)</button>
+                <button id="btnSpareF" onclick="filterSpare('여')" class="flex-1 border-2 border-pink-400 text-pink-600 py-2 rounded-lg font-bold transition-colors">여학생 (여)</button>
+            </div>
 
-      const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (!isLoaded || !window.XLSX) return setStatus('엑셀 처리 모듈 준비중입니다.');
-        setStatus('파일을 분석하는 중입니다...');
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          try {
-            const workbook = window.XLSX.read(evt.target.result, { type: 'array' });
-            const json = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
-            if (json.length > 0 && json[0].hasOwnProperty('좌석번호')) {
-              setStudents(json); localStorage.setItem('lunchStudents', JSON.stringify(json));
-              setStatus(`성공적으로 업데이트 되었습니다! (총 ${json.length}명)`);
-            } else setStatus('오류: 올바른 형식의 파일이 아닙니다.');
-          } catch (err) { setStatus(`파일 읽기 오류: ${err.message}`); }
-          if (fileInputRef.current) fileInputRef.current.value = '';
+            <div id="spareResult" class="mt-4 grid grid-cols-4 gap-2"></div>
+        </div>
+
+        <!-- 3. 학급 급식 순서 탭 -->
+        <div id="tab-order" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-indigo-500 pb-2 inline-block">학급 급식 순서</h2>
+            <input type="date" id="orderDateInput" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="searchOrder()">
+            <button onclick="searchOrder()" class="w-full bg-indigo-500 text-white font-bold py-3 rounded-lg shadow mt-2">급식 순서 검색</button>
+            <div id="orderResult" class="mt-4"></div>
+        </div>
+
+        <!-- 3-2. 급식 지도 교사 탭 -->
+        <div id="tab-teacher" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-teal-500 pb-2 inline-block">급식 지도 교사</h2>
+            <input type="date" id="teacherDateInput" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500" onchange="searchTeacherOnly()">
+            <button onclick="searchTeacherOnly()" class="w-full bg-teal-500 text-white font-bold py-3 rounded-lg shadow mt-2">지도 교사 검색</button>
+            <div id="teacherOnlyResult" class="mt-4"></div>
+        </div>
+
+        <!-- 4. 벌점 관리 탭 (초기값 제거됨) -->
+        <div id="tab-penalty" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-red-500 pb-2 inline-block">이석 위반자 벌점 부여</h2>
+            <input type="date" id="penaltyDate" class="w-full border p-3 rounded-lg shadow-sm mb-2">
+            <div class="flex gap-2 mb-2">
+                <input type="number" id="penGrade" placeholder="학년" min="1" max="3" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
+                <input type="number" id="penClass" placeholder="반" min="1" max="15" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
+                <input type="number" id="penNum" placeholder="번호" min="1" max="50" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
+            </div>
+            <button onclick="addPenalty()" class="w-full bg-red-500 text-white font-bold py-3 rounded-lg shadow hover:bg-red-600">벌점 기록 저장</button>
+            
+            <h3 class="font-bold mt-6 border-b pb-2">벌점 누적 기록</h3>
+            <ul id="penaltyList" class="space-y-2 mt-2 empty:after:content-['기록이_없습니다.'] empty:after:text-gray-400 empty:after:block empty:after:text-center empty:after:py-4"></ul>
+        </div>
+
+        <!-- 5. 환경 설정 탭 -->
+        <div id="tab-settings" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-gray-500 pb-2 inline-block">데이터 업데이트</h2>
+            <div class="bg-white p-4 rounded-lg shadow-sm border space-y-4">
+                <div>
+                    <label class="block font-bold text-sm mb-1 text-blue-700">자리배치표 업로드 (.xlsx)</label>
+                    <input type="file" id="seatFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+                <div class="border-t pt-4 mt-2">
+                    <label class="block font-bold text-sm mb-1 text-teal-700">급식 지도 교사표 업로드 (.xlsx)</label>
+                    <input type="file" id="teacherFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                    <p class="text-xs text-gray-400 mt-1">※ '날짜'(YYYY-MM-DD), '역할', '이름' 열이 포함되어야 합니다.</p>
+                </div>
+            </div>
+            <button onclick="requestClearData()" class="w-full border-2 border-red-500 text-red-500 font-bold py-3 rounded-lg shadow mt-6 hover:bg-red-50">모든 데이터 초기화</button>
+        </div>
+    </main>
+
+    <!-- 커스텀 모달 오버레이 (alert, confirm 대체) -->
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-[85%] w-full mx-4 transform transition-all">
+            <h3 id="modalTitle" class="font-bold text-xl mb-3 text-gray-800">알림</h3>
+            <p id="modalMessage" class="text-gray-600 mb-6 leading-relaxed"></p>
+            <div class="flex justify-end gap-3">
+                <button id="modalBtnCancel" class="px-5 py-2.5 bg-gray-200 rounded-lg text-gray-800 hidden font-semibold hover:bg-gray-300">취소</button>
+                <button id="modalBtnConfirm" class="px-5 py-2.5 bg-blue-500 rounded-lg text-white font-semibold hover:bg-blue-600 shadow">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 메시지 컨테이너 -->
+    <div id="toastContainer" class="fixed bottom-24 left-0 w-full flex flex-col items-center justify-end pointer-events-none z-50 space-y-2 px-4"></div>
+
+    <!-- 하단 네비게이션 바 (6개 항목으로 분리) -->
+    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10 text-[0.65rem] pb-safe">
+        <button onclick="switchTab('search')" id="nav-search" class="nav-btn active flex flex-col items-center w-1/6 py-1">
+            <span class="text-lg mb-1">🔍</span>검색
+        </button>
+        <button onclick="switchTab('spare')" id="nav-spare" class="nav-btn flex flex-col items-center w-1/6 py-1">
+            <span class="text-lg mb-1">🪑</span>여분
+        </button>
+        <button onclick="switchTab('order')" id="nav-order" class="nav-btn flex flex-col items-center w-1/6 py-1">
+            <span class="text-lg mb-1">📋</span>순서
+        </button>
+        <button onclick="switchTab('teacher')" id="nav-teacher" class="nav-btn flex flex-col items-center w-1/6 py-1">
+            <span class="text-lg mb-1">👨‍🏫</span>교사
+        </button>
+        <button onclick="switchTab('penalty')" id="nav-penalty" class="nav-btn flex flex-col items-center w-1/6 py-1">
+            <span class="text-lg mb-1">🚨</span>벌점
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center w-1/6 py-1">
+            <span class="text-lg mb-1">⚙️</span>설정
+        </button>
+    </nav>
+
+    <script>
+        // 전역 데이터 변수
+        let seatData = JSON.parse(localStorage.getItem('smartMealSeats')) || [];
+        
+        let defaultTeacherData = {
+            "2026-08-20": [
+                { role: "1차 입구(남)", name: "김태호" },
+                { role: "1차 입구(여)", name: "이유리" },
+                { role: "2차 입구(남)", name: "박지성" },
+                { role: "2차 입구(여)", name: "최수영" },
+                { role: "잔반 지도", name: "정형돈" }
+            ],
+            "2026-08-21": [
+                { role: "1차 입구(전체)", name: "홍길동" },
+                { role: "2차 입구(전체)", name: "이순신" },
+                { role: "잔반 지도", name: "유관순" }
+            ]
         };
-        reader.readAsArrayBuffer(file);
-      };
+        let teacherData = JSON.parse(localStorage.getItem('smartMealTeachers'));
+        if(!teacherData || Object.keys(teacherData).length === 0) {
+            teacherData = defaultTeacherData;
+        }
 
-      const handleResetData = () => { if(window.confirm('데이터를 초기화하시겠습니까? (벌점은 유지됩니다)')) { setStudents(INITIAL_DATA); localStorage.setItem('lunchStudents', JSON.stringify(INITIAL_DATA)); setStatus('기본 데이터로 초기화되었습니다.'); } }
+        let penaltyData = JSON.parse(localStorage.getItem('smartMealPenalties')) || [];
+        let currentSpareShift = '1차';
+        let currentSpareGender = '남';
+        const specialSeats = [208, 209, 210, 235, 236, 237, 286, 287, 288, 311, 312, 499, 500, 501, 502, 503, 504];
 
-      return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-          <div className="bg-white p-8 rounded-[2rem] shadow-lg border border-slate-100 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-[100px] -z-0"></div>
-            <div className="relative z-10">
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner"><FileSpreadsheet size={36} className="text-emerald-600" strokeWidth={2} /></div>
-              <h2 className="text-[18px] font-black text-slate-800 mb-3 whitespace-nowrap">자리배치표 업데이트</h2>
-              <p className="text-[13px] text-slate-500 mb-8 leading-relaxed font-medium break-keep">전출, 전입 등으로 변동이 생겼을 때<br/>새로운 엑셀(.xlsx) 파일을 업로드하세요.<br/><span className="text-indigo-500 font-bold bg-indigo-50 px-2 py-1 rounded-md mt-2 inline-block">데이터는 폰에만 안전하게 저장됩니다.</span></p>
-              <input type="file" accept=".xlsx, .xls, .csv" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-              <button onClick={() => fileInputRef.current?.click()} className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-[15px] py-4 rounded-2xl flex justify-center items-center gap-2 shadow-md transition-all active:scale-95 whitespace-nowrap"><Upload size={22} strokeWidth={2.5}/> 새 엑셀 파일 업로드</button>
-              {status && (<div className={`mt-5 p-4 rounded-2xl text-[13px] font-bold flex items-center justify-center gap-2 break-keep ${status.includes('성공') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : status.includes('오류') ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>{status.includes('성공') && <CheckCircle2 size={18} />}{status}</div>)}
-            </div>
-          </div>
-          <div className="text-center pb-4"><button onClick={handleResetData} className="text-[12px] font-bold text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-4 transition-colors whitespace-nowrap">데모 데이터로 초기화</button></div>
-        </div>
-      );
-    }
+        // 앱 초기 세팅
+        window.onload = function() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('orderDateInput').value = todayStr;
+            document.getElementById('teacherDateInput').value = todayStr;
+            document.getElementById('penaltyDate').value = todayStr;
+            renderPenalties();
+            
+            if(seatData.length === 0) {
+                showToast('설정 탭에서 엑셀 데이터를 먼저 업로드해주세요.');
+            }
+        };
 
-    // React 18 렌더링 방식
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+        /* --- 커스텀 모달 및 토스트 함수 --- */
+        function showAlert(title, message) {
+            setupModal(title, message, false);
+        }
+
+        function showConfirm(title, message, onConfirmCallback) {
+            setupModal(title, message, true, onConfirmCallback);
+        }
+
+        function setupModal(title, message, isConfirm, onConfirmCallback) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            
+            const modal = document.getElementById('customModal');
+            const btnCancel = document.getElementById('modalBtnCancel');
+            const btnConfirm = document.getElementById('modalBtnConfirm');
+            
+            // 기존 이벤트 제거를 위해 노드 교체
+            const newConfirm = btnConfirm.cloneNode(true);
+            btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+            
+            if(isConfirm) {
+                btnCancel.classList.remove('hidden');
+                newConfirm.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                newConfirm.classList.add('bg-red-500', 'hover:bg-red-600');
+                
+                btnCancel.onclick = () => modal.classList.add('hidden');
+                newConfirm.onclick = () => {
+                    modal.classList.add('hidden');
+                    if(onConfirmCallback) onConfirmCallback();
+                };
+            } else {
+                btnCancel.classList.add('hidden');
+                newConfirm.classList.remove('bg-red-500', 'hover:bg-red-600');
+                newConfirm.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                
+                newConfirm.onclick = () => modal.classList.add('hidden');
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-5 py-3 rounded-full shadow-lg text-sm transition-opacity duration-300 pointer-events-auto';
+            toast.innerText = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        /* --- 탭 전환 --- */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('active');
+            if(tabId === 'spare') renderSpareSeats();
+        }
+
+        /* --- 1. 검색 기능 --- */
+        function performSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            const resDiv = document.getElementById('searchResult');
+            if(!q) return;
+
+            if(seatData.length === 0) {
+                resDiv.innerHTML = `<div class="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-center">데이터가 없습니다.<br>설정 탭에서 파일을 업로드해주세요.</div>`;
+                return;
+            }
+
+            let results = [];
+            const isNumber = /^\d+$/.test(q);
+            
+            if(isNumber && q.length >= 4) { // 학번 검색
+                const grade = parseInt(q.substring(0,1));
+                const cls = parseInt(q.substring(1,3));
+                const num = parseInt(q.substring(3));
+                results = seatData.filter(s => s.학년 == grade && s.반 == cls && s.번호 == num);
+            } else if (isNumber && q.length < 4) { // 좌석번호 검색
+                results = seatData.filter(s => s.좌석번호 == parseInt(q));
+            } else { // 이름 검색
+                results = seatData.filter(s => s.이름 && s.이름.includes(q));
+            }
+
+            if(results.length === 0) {
+                resDiv.innerHTML = `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">검색 결과가 없습니다.</div>`;
+                return;
+            }
+
+            let html = `<ul class="space-y-3">`;
+            results.forEach(s => {
+                let stuId = (s.학년 && s.반 && s.번호) ? `${s.학년}${String(s.반).padStart(2,'0')}${String(s.번호).padStart(2,'0')}` : '-';
+                
+                let content = '';
+                if(isNumber && q.length >= 4) {
+                    content = `<div class="text-gray-600 mt-1">이름: <span class="font-bold text-gray-900 text-lg ml-1">${s.이름 || '여분좌석'}</span></div>
+                               <div class="text-gray-600 mt-1">좌석번호: <span class="font-black text-blue-600 text-2xl ml-1">${s.좌석번호}</span></div>`;
+                } else if (isNumber && q.length < 4) {
+                    content = `<div class="text-gray-600 mt-1">학번: <span class="font-bold text-gray-900 text-lg ml-1">${stuId}</span></div>
+                               <div class="text-gray-600 mt-1">이름: <span class="font-bold text-gray-900 text-lg ml-1">${s.이름 || '여분좌석'}</span></div>`;
+                } else {
+                    content = `<div class="text-gray-600 mt-1">학번: <span class="font-bold text-gray-900 text-lg ml-1">${stuId}</span></div>
+                               <div class="text-gray-600 mt-1">좌석번호: <span class="font-black text-blue-600 text-2xl ml-1">${s.좌석번호}</span></div>`;
+                }
+
+                html += `<li class="p-4 border rounded-xl bg-white shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-2 h-full ${s.차시 === '1차' ? 'bg-green-500' : 'bg-purple-500'}"></div>
+                            <div class="pl-2">
+                                <div class="font-black text-lg ${s.차시 === '1차' ? 'text-green-700' : 'text-purple-700'}">${s.차시} 급식</div>
+                                ${content}
+                            </div>
+                         </li>`;
+            });
+            html += `</ul>`;
+            resDiv.innerHTML = html;
+        }
+
+        /* --- 2. 여분 좌석 조회 기능 --- */
+        function showSpare(shift) {
+            currentSpareShift = shift;
+            const btn1 = document.getElementById('btnSpare1');
+            const btn2 = document.getElementById('btnSpare2');
+            
+            // 초기화
+            btn1.classList.remove('opacity-50', 'border-red-600', 'border-transparent');
+            btn2.classList.remove('opacity-50', 'border-red-600', 'border-transparent');
+            
+            if(shift === '1차') {
+                btn2.classList.add('opacity-50', 'border-transparent');
+                btn1.classList.add('border-red-600');
+                document.getElementById('spareInfoText').innerText = "3학년1반~10반 2학년 6반~10반";
+            } else {
+                btn1.classList.add('opacity-50', 'border-transparent');
+                btn2.classList.add('border-red-600');
+                document.getElementById('spareInfoText').innerText = "2학년 1반~5반, 1학년 1반~1학년10반";
+            }
+            renderSpareSeats();
+        }
+
+        function filterSpare(gender) {
+            currentSpareGender = gender;
+            const btnM = document.getElementById('btnSpareM');
+            const btnF = document.getElementById('btnSpareF');
+            
+            btnM.classList.remove('bg-blue-50', 'border-blue-400');
+            btnM.classList.add('border-gray-300', 'text-gray-400');
+            btnF.classList.remove('bg-pink-50', 'border-pink-400');
+            btnF.classList.add('border-gray-300', 'text-gray-400');
+            
+            if(gender === '남') {
+                btnM.classList.add('bg-blue-50', 'border-blue-400');
+                btnM.classList.remove('border-gray-300', 'text-gray-400');
+            } else {
+                btnF.classList.add('bg-pink-50', 'border-pink-400');
+                btnF.classList.remove('border-gray-300', 'text-gray-400');
+            }
+            renderSpareSeats();
+        }
+
+        function renderSpareSeats() {
+            const resDiv = document.getElementById('spareResult');
+            if(seatData.length === 0) {
+                resDiv.innerHTML = `<div class="col-span-4 text-center text-red-500 py-4 text-sm bg-red-50 rounded-lg border border-red-200">데이터를 업로드해주세요.</div>`;
+                return;
+            }
+
+            const filtered = seatData.filter(s => s.차시 === currentSpareShift && s.구역 === currentSpareGender && (!s.이름 || s.이름.includes('여분')));
+            filtered.sort((a,b) => a.좌석번호 - b.좌석번호);
+
+            if(filtered.length === 0) {
+                resDiv.innerHTML = `<div class="col-span-4 text-center text-gray-500 py-4 text-sm bg-gray-50 rounded-lg border">해당 조건의 여분 좌석이 없습니다.</div>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(s => {
+                const isSpecial = specialSeats.includes(s.좌석번호);
+                const bgClass = isSpecial ? 'bg-orange-500 text-white border-orange-600 shadow-md' : 'bg-white border-gray-300 text-gray-800 shadow-sm';
+                const specialText = isSpecial ? `<div class="text-[0.55rem] italic mt-1 font-normal text-center leading-tight">** 1, 2차 여분좌석</div>` : '';
+                html += `<div class="border rounded-lg p-2 flex flex-col items-center justify-center font-bold h-16 ${bgClass}">
+                            <span class="text-xl">${s.좌석번호}</span>
+                            ${specialText}
+                         </div>`;
+            });
+            resDiv.innerHTML = html;
+        }
+
+        /* --- 3. 학급 급식 순서 및 지도 교사 기능 --- */
+        const schedules = [
+            { start: '2026-08-18', end: '2026-08-28', s1: '3-1반~10반, 2-6반~10반', s2: '2-1반~5반, 1-1반~10반' },
+            { start: '2026-08-31', end: '2026-09-11', s1: '3-2반~1반, 2-7반~6반', s2: '2-2반~1반, 1-2반~1반' },
+            { start: '2026-09-14', end: '2026-09-23', s1: '3-3반~2반, 2-8반~7반', s2: '2-3반~2반, 1-3반~2반' },
+            { start: '2026-09-28', end: '2026-10-08', s1: '3-4반~3반, 2-9반~8반', s2: '2-4반~3반, 1-4반~3반' },
+            { start: '2026-10-12', end: '2026-10-23', s1: '3-5반~4반, 2-10반~9반', s2: '2-5반~4반, 1-5반~4반' },
+            { start: '2026-10-26', end: '2026-11-06', s1: '3-6반~5반, 2-1반~5반', s2: '2-6반~10반, 1-6반~5반' },
+            { start: '2026-11-10', end: '2026-11-20', s1: '3-7반~6반, 2-2반~1반', s2: '2-7반~6반, 1-7반~6반' },
+            { start: '2026-11-23', end: '2026-12-04', s1: '3-8반~7반, 2-3반~2반', s2: '2-8반~7반, 1-8반~7반' },
+            { start: '2026-12-07', end: '2026-12-18', s1: '3-9반~8반, 2-4반~3반', s2: '2-9반~8반, 1-9반~8반' },
+            { start: '2026-12-14', end: '2026-12-23', s1: '3-10반~9반, 2-5반~4반', s2: '2-10반~9반, 1-10반~9반' },
+            { start: '2026-12-28', end: '2026-12-30', s1: '3-10반~9반, 2-5반~4반', s2: '2-10반~9반, 1-10반~9반' },
+            { start: '2027-02-01', end: '2027-02-03', s1: '3-10반~9반, 2-5반~4반', s2: '2-10반~9반, 1-10반~9반' }
+        ];
+
+        function parseSequence(str) {
+            const parts = str.split(',').map(s => s.trim());
+            let allSeqs = [];
+            parts.forEach(part => {
+                const cleanPart = part.replace(/\s+/g, '');
+                const match = cleanPart.match(/(\d+)-(\d+)반?~(\d+)반?/);
+                if(match) {
+                    const grade = parseInt(match[1]);
+                    const startCls = parseInt(match[2]);
+                    const endCls = parseInt(match[3]);
+                    
+                    let minCls = 1, maxCls = 10;
+                    if(grade === 3 || grade === 1) {
+                        minCls = 1; maxCls = 10;
+                    } else if(grade === 2) {
+                        if(startCls <= 5 && endCls <= 5) {
+                            minCls = 1; maxCls = 5;
+                        } else if(startCls >= 6 && endCls >= 6) {
+                            minCls = 6; maxCls = 10;
+                        } else {
+                            minCls = 1; maxCls = 10;
+                        }
+                    }
+                    
+                    let seq = [];
+                    let curr = startCls;
+                    let count = 0;
+                    while(count < 15) {
+                        seq.push(`<span class="font-bold text-gray-800 whitespace-nowrap">${grade}-${curr}반</span>`);
+                        if(curr === endCls) break;
+                        curr++;
+                        if(curr > maxCls) curr = minCls;
+                        count++;
+                    }
+                    allSeqs.push(seq.join(' <span class="text-indigo-400 text-sm mx-0.5">➔</span> '));
+                } else {
+                    allSeqs.push(`<span class="font-bold text-gray-800">${part}</span>`);
+                }
+            });
+            return allSeqs.join('<div class="my-2 border-b border-dashed border-gray-300"></div>');
+        }
+
+        function searchOrder() {
+            const d = document.getElementById('orderDateInput').value;
+            if(!d) return;
+            
+            const scheduleMatch = schedules.find(s => d >= s.start && d <= s.end);
+            let html = '';
+
+            if(scheduleMatch) {
+                html += `<div class="bg-indigo-50 border border-indigo-200 p-5 rounded-xl mb-4 shadow-sm">
+                    <h4 class="font-bold text-indigo-900 mb-3 border-b border-indigo-200 pb-2 flex justify-between items-center">
+                        <span class="text-lg">급식 입장 순서</span>
+                        <span class="text-xs font-semibold bg-indigo-100 px-2 py-1 rounded text-indigo-700">${scheduleMatch.start} ~</span>
+                    </h4>
+                    
+                    <div class="mb-4">
+                        <div class="flex items-center mb-2">
+                            <strong class="text-green-700 bg-green-100 px-3 py-1 rounded-full shadow-sm text-sm border border-green-200">1차 급식 (12:20)</strong>
+                        </div>
+                        <div class="text-[0.9rem] text-gray-700 bg-white p-3 rounded-lg border shadow-inner leading-relaxed overflow-x-auto">
+                            ${parseSequence(scheduleMatch.s1)}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center mb-2">
+                            <strong class="text-purple-700 bg-purple-100 px-3 py-1 rounded-full shadow-sm text-sm border border-purple-200">2차 급식 (12:40)</strong>
+                        </div>
+                        <div class="text-[0.9rem] text-gray-700 bg-white p-3 rounded-lg border shadow-inner leading-relaxed overflow-x-auto">
+                            ${parseSequence(scheduleMatch.s2)}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 text-center">
+                        ※ 1차 급식 앞 반은 입장시간 준수. <br>(12:35분 이후 입장 시 불이익)
+                    </div>
+                </div>`;
+            } else {
+                html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜에 배정된 급식 순서 정보가 없습니다.</div>`;
+            }
+            document.getElementById('orderResult').innerHTML = html;
+        }
+
+        function searchTeacherOnly() {
+            const d = document.getElementById('teacherDateInput').value;
+            if(!d) return;
+            
+            let html = '';
+            const teachers = teacherData[d];
+            if(!teachers || teachers.length === 0) {
+                html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜에 배정된 지도 교사 정보가 없습니다.</div>`;
+            } else {
+                html += `<div class="bg-white p-4 rounded-xl border shadow-sm"><h4 class="font-bold text-lg mb-3 text-teal-800 border-b pb-2 flex items-center gap-2"><span>👨‍🏫</span> 당일 급식 지도 교사</h4><ul class="space-y-3">`;
+                teachers.forEach(t => {
+                    html += `<li class="flex justify-between items-center bg-teal-50 p-3 rounded-lg border border-teal-100 shadow-sm"><span class="text-sm font-semibold text-teal-700">${t.role}</span><span class="font-bold text-lg text-gray-800">${t.name} 교사</span></li>`;
+                });
+                html += `</ul></div>`;
+            }
+            document.getElementById('teacherOnlyResult').innerHTML = html;
+        }
+
+        /* --- 4. 벌점 관리 --- */
+        function addPenalty() {
+            const date = document.getElementById('penaltyDate').value;
+            const grade = document.getElementById('penGrade').value;
+            const cls = document.getElementById('penClass').value;
+            const num = document.getElementById('penNum').value;
+            
+            if(!date || !grade || !cls || !num) { 
+                showAlert('입력 오류', '날짜 및 학년, 반, 번호를 모두 입력해주세요.'); 
+                return; 
+            }
+            
+            const record = { 
+                id: Date.now(), date: date, grade: grade, cls: cls, num: num, 
+                stuId: `${grade}${String(cls).padStart(2,'0')}${String(num).padStart(2,'0')}` 
+            };
+            
+            penaltyData.push(record);
+            localStorage.setItem('smartMealPenalties', JSON.stringify(penaltyData));
+            renderPenalties();
+            
+            showToast('벌점이 정상적으로 저장되었습니다.');
+            document.getElementById('penNum').value = ''; // 다음 학생 입력을 위해 번호만 지움
+        }
+
+        function requestDeletePenalty(id) {
+            showConfirm('기록 삭제', '해당 학생의 벌점 기록을 삭제하시겠습니까?', () => {
+                penaltyData = penaltyData.filter(p => p.id !== id);
+                localStorage.setItem('smartMealPenalties', JSON.stringify(penaltyData));
+                renderPenalties();
+                showToast('삭제되었습니다.');
+            });
+        }
+
+        function renderPenalties() {
+            const list = document.getElementById('penaltyList');
+            list.innerHTML = '';
+            const sorted = [...penaltyData].sort((a,b) => b.date.localeCompare(a.date));
+            sorted.forEach(p => {
+                list.innerHTML += `<li class="flex justify-between items-center p-3 border-l-4 border-red-500 rounded-r-lg bg-white shadow-sm mb-2">
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">${p.date}</div>
+                        <div class="text-gray-800 font-bold tracking-wide">${p.stuId} <span class="text-red-600 ml-1 text-sm">(${p.grade}학년 ${p.cls}반 ${p.num}번)</span></div>
+                    </div>
+                    <button onclick="requestDeletePenalty(${p.id})" class="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-red-100 hover:text-red-600 border transition-colors">삭제</button>
+                </li>`;
+            });
+        }
+
+        /* --- 5. 환경 설정 (엑셀 파싱) --- */
+        document.getElementById('seatFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+                    
+                    const cleanedData = json.map(row => ({
+                        차시: row['차시'] ? String(row['차시']).trim() : '',
+                        구역: row['구역'] ? String(row['구역']).trim() : '',
+                        학년: parseInt(row['학년']) || '',
+                        반: parseInt(row['반']) || '',
+                        번호: parseInt(row['번호']) || '',
+                        이름: row['이름'] ? String(row['이름']).trim() : '',
+                        좌석번호: parseInt(row['좌석번호']) || 0
+                    })).filter(r => r.좌석번호 > 0);
+
+                    localStorage.setItem('smartMealSeats', JSON.stringify(cleanedData));
+                    seatData = cleanedData;
+                    showAlert('저장 완료', `자리배치표 ${cleanedData.length}개 데이터가 성공적으로 저장되었습니다.`);
+                    document.getElementById('seatFile').value = '';
+                } catch(err) { 
+                    showAlert('오류', '엑셀 파일을 읽는 중 오류가 발생했습니다.'); 
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('teacherFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    // 날짜 데이터 파싱을 위해 cellDates 옵션 사용
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    let parsedTeachers = {};
+                    json.forEach(row => {
+                        let dateStr = '';
+                        // 엑셀 날짜 포맷팅 처리
+                        if(row['날짜'] instanceof Date) {
+                            const d = new Date(row['날짜']);
+                            // 타임존 차이로 인한 날짜 밀림 방지
+                            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                            dateStr = d.toISOString().split('T')[0];
+                        } else if(typeof row['날짜'] === 'string') {
+                            dateStr = row['날짜'].trim();
+                        } else if(typeof row['날짜'] === 'number') {
+                            // 엑셀 시리얼 번호 날짜 처리
+                            const d = new Date((row['날짜'] - 25569) * 86400 * 1000);
+                            dateStr = d.toISOString().split('T')[0];
+                        }
+
+                        if(dateStr && row['이름']) {
+                            if(!parsedTeachers[dateStr]) parsedTeachers[dateStr] = [];
+                            parsedTeachers[dateStr].push({
+                                role: row['역할'] ? String(row['역할']).trim() : '지도교사',
+                                name: String(row['이름']).trim()
+                            });
+                        }
+                    });
+
+                    if(Object.keys(parsedTeachers).length === 0) throw new Error("유효한 데이터가 없습니다.");
+
+                    localStorage.setItem('smartMealTeachers', JSON.stringify(parsedTeachers));
+                    teacherData = parsedTeachers;
+                    showAlert('저장 완료', `총 ${Object.keys(parsedTeachers).length}일치의 교사 배정 데이터가 저장되었습니다.`);
+                    document.getElementById('teacherFile').value = '';
+                    
+                    // 현재 입력된 날짜로 화면 즉시 갱신
+                    if (document.getElementById('tab-teacher').classList.contains('active')) {
+                        searchTeacherOnly();
+                    }
+                } catch(err) { 
+                    showAlert('오류', '파일을 읽는 중 오류가 발생했습니다. (날짜, 역할, 이름 열을 확인하세요)'); 
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function requestClearData() {
+            showConfirm(
+                '데이터 초기화', 
+                '저장된 모든 자리배치, 벌점 데이터를 기기에서 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.', 
+                () => {
+                    localStorage.clear();
+                    location.reload();
+                }
+            );
+        }
+    </script>
 </body>
 </html>
