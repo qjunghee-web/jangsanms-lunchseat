@@ -83,6 +83,14 @@
             <div id="teacherOnlyResult" class="mt-4"></div>
         </div>
 
+        <!-- 3-3. 식단표 탭 -->
+        <div id="tab-menu" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-orange-500 pb-2 inline-block">월간 식단표</h2>
+            <input type="date" id="menuDateInput" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="renderMenu()">
+            <button onclick="renderMenu()" class="w-full bg-orange-500 text-white font-bold py-3 rounded-lg shadow mt-2">식단 검색</button>
+            <div id="menuResult" class="mt-4"></div>
+        </div>
+
         <!-- 4. 벌점 관리 탭 (초기값 제거됨) -->
         <div id="tab-penalty" class="tab-content space-y-4">
             <h2 class="font-bold text-lg border-b-2 border-red-500 pb-2 inline-block">이석 위반자 벌점 부여</h2>
@@ -103,13 +111,18 @@
             <h2 class="font-bold text-lg border-b-2 border-gray-500 pb-2 inline-block">데이터 업데이트</h2>
             <div class="bg-white p-4 rounded-lg shadow-sm border space-y-4">
                 <div>
-                    <label class="block font-bold text-sm mb-1 text-blue-700">자리배치표 업로드 (.xlsx)</label>
+                    <label class="block font-bold text-sm mb-1 text-blue-700">1. 자리배치표 업로드 (.xlsx)</label>
                     <input type="file" id="seatFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 </div>
                 <div class="border-t pt-4 mt-2">
-                    <label class="block font-bold text-sm mb-1 text-teal-700">급식 지도 교사표 업로드 (.xlsx)</label>
+                    <label class="block font-bold text-sm mb-1 text-teal-700">2. 급식 지도 교사표 (.xlsx)</label>
                     <input type="file" id="teacherFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
-                    <p class="text-xs text-gray-400 mt-1">※ '날짜'(YYYY-MM-DD), '역할', '이름' 열이 포함되어야 합니다.</p>
+                    <p class="text-xs text-gray-400 mt-1">※ '날짜', '역할'(또는 장소), '이름'(또는 교사) 열이 포함되어야 합니다.</p>
+                </div>
+                <div class="border-t pt-4 mt-2">
+                    <label class="block font-bold text-sm mb-1 text-orange-700">3. 월간 식단표 업로드 (.xlsx)</label>
+                    <input type="file" id="menuFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                    <p class="text-xs text-gray-400 mt-1">※ '날짜', '식단'(또는 메뉴, 요리명) 열이 포함되어야 합니다.</p>
                 </div>
             </div>
             <button onclick="requestClearData()" class="w-full border-2 border-red-500 text-red-500 font-bold py-3 rounded-lg shadow mt-6 hover:bg-red-50">모든 데이터 초기화</button>
@@ -131,24 +144,27 @@
     <!-- 토스트 메시지 컨테이너 -->
     <div id="toastContainer" class="fixed bottom-24 left-0 w-full flex flex-col items-center justify-end pointer-events-none z-50 space-y-2 px-4"></div>
 
-    <!-- 하단 네비게이션 바 (6개 항목으로 분리) -->
-    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10 text-[0.65rem] pb-safe">
-        <button onclick="switchTab('search')" id="nav-search" class="nav-btn active flex flex-col items-center w-1/6 py-1">
+    <!-- 하단 네비게이션 바 (식단 탭 추가 및 디자인 조정) -->
+    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10 text-[0.65rem] pb-safe overflow-x-auto">
+        <button onclick="switchTab('search')" id="nav-search" class="nav-btn active flex flex-col items-center flex-1 min-w-[50px] py-1">
             <span class="text-lg mb-1">🔍</span>검색
         </button>
-        <button onclick="switchTab('spare')" id="nav-spare" class="nav-btn flex flex-col items-center w-1/6 py-1">
+        <button onclick="switchTab('spare')" id="nav-spare" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
             <span class="text-lg mb-1">🪑</span>여분
         </button>
-        <button onclick="switchTab('order')" id="nav-order" class="nav-btn flex flex-col items-center w-1/6 py-1">
+        <button onclick="switchTab('order')" id="nav-order" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
             <span class="text-lg mb-1">📋</span>순서
         </button>
-        <button onclick="switchTab('teacher')" id="nav-teacher" class="nav-btn flex flex-col items-center w-1/6 py-1">
+        <button onclick="switchTab('teacher')" id="nav-teacher" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
             <span class="text-lg mb-1">👨‍🏫</span>교사
         </button>
-        <button onclick="switchTab('penalty')" id="nav-penalty" class="nav-btn flex flex-col items-center w-1/6 py-1">
+        <button onclick="switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
+            <span class="text-lg mb-1">🍱</span>식단
+        </button>
+        <button onclick="switchTab('penalty')" id="nav-penalty" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
             <span class="text-lg mb-1">🚨</span>벌점
         </button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center w-1/6 py-1">
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
             <span class="text-lg mb-1">⚙️</span>설정
         </button>
     </nav>
@@ -176,16 +192,27 @@
             teacherData = defaultTeacherData;
         }
 
+        let menuData = JSON.parse(localStorage.getItem('smartMealMenu')) || {};
         let penaltyData = JSON.parse(localStorage.getItem('smartMealPenalties')) || [];
         let currentSpareShift = '1차';
         let currentSpareGender = '남';
         const specialSeats = [208, 209, 210, 235, 236, 237, 286, 287, 288, 311, 312, 499, 500, 501, 502, 503, 504];
+
+        // 날짜 문자열에 요일을 덧붙여 반환하는 헬퍼 함수
+        function getFormattedDateWithDay(dateStr) {
+            if(!dateStr) return '';
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const d = new Date(dateStr);
+            if(isNaN(d.getTime())) return dateStr;
+            return `${dateStr}(${days[d.getDay()]})`;
+        }
 
         // 앱 초기 세팅
         window.onload = function() {
             const todayStr = new Date().toISOString().split('T')[0];
             document.getElementById('orderDateInput').value = todayStr;
             document.getElementById('teacherDateInput').value = todayStr;
+            document.getElementById('menuDateInput').value = todayStr;
             document.getElementById('penaltyDate').value = todayStr;
             renderPenalties();
             
@@ -451,10 +478,12 @@
             let html = '';
 
             if(scheduleMatch) {
+                const displayDate = getFormattedDateWithDay(d);
+                const startDate = getFormattedDateWithDay(scheduleMatch.start);
                 html += `<div class="bg-indigo-50 border border-indigo-200 p-5 rounded-xl mb-4 shadow-sm">
                     <h4 class="font-bold text-indigo-900 mb-3 border-b border-indigo-200 pb-2 flex justify-between items-center">
-                        <span class="text-lg">급식 입장 순서</span>
-                        <span class="text-xs font-semibold bg-indigo-100 px-2 py-1 rounded text-indigo-700">${scheduleMatch.start} ~</span>
+                        <span class="text-lg">${displayDate} 급식 순서</span>
+                        <span class="text-xs font-semibold bg-indigo-100 px-2 py-1 rounded text-indigo-700">${startDate} ~</span>
                     </h4>
                     
                     <div class="mb-4">
@@ -489,18 +518,48 @@
             const d = document.getElementById('teacherDateInput').value;
             if(!d) return;
             
+            const displayDate = getFormattedDateWithDay(d);
             let html = '';
             const teachers = teacherData[d];
             if(!teachers || teachers.length === 0) {
                 html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜에 배정된 지도 교사 정보가 없습니다.</div>`;
             } else {
-                html += `<div class="bg-white p-4 rounded-xl border shadow-sm"><h4 class="font-bold text-lg mb-3 text-teal-800 border-b pb-2 flex items-center gap-2"><span>👨‍🏫</span> 당일 급식 지도 교사</h4><ul class="space-y-3">`;
+                html += `<div class="bg-white p-4 rounded-xl border shadow-sm"><h4 class="font-bold text-lg mb-3 text-teal-800 border-b pb-2 flex items-center gap-2"><span>👨‍🏫</span> ${displayDate} 지도 교사</h4><ul class="space-y-3">`;
                 teachers.forEach(t => {
                     html += `<li class="flex justify-between items-center bg-teal-50 p-3 rounded-lg border border-teal-100 shadow-sm"><span class="text-sm font-semibold text-teal-700">${t.role}</span><span class="font-bold text-lg text-gray-800">${t.name} 교사</span></li>`;
                 });
                 html += `</ul></div>`;
             }
             document.getElementById('teacherOnlyResult').innerHTML = html;
+        }
+
+        /* --- 3-3. 식단표 렌더링 --- */
+        function renderMenu() {
+            const d = document.getElementById('menuDateInput').value;
+            if(!d) return;
+            
+            const resDiv = document.getElementById('menuResult');
+            const menuStr = menuData[d];
+            
+            if(!menuStr) {
+                resDiv.innerHTML = `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜의 식단 정보가 없습니다.<br>설정에서 식단표 엑셀을 업로드해주세요.</div>`;
+                return;
+            }
+            
+            const displayDate = getFormattedDateWithDay(d);
+            // 엑셀에서 줄바꿈이 있는 경우 유지, 쉼표가 있는 경우도 보기 좋게 변경
+            const formattedMenu = menuStr.replace(/\n/g, '<br>').replace(/,/g, '<br>');
+            
+            resDiv.innerHTML = `
+                <div class="bg-white border shadow-sm rounded-xl overflow-hidden mt-2">
+                    <div class="bg-orange-50 border-b border-orange-100 p-3 text-center font-bold text-orange-800 flex justify-between items-center">
+                        <span>🍱 ${displayDate} 식단</span>
+                    </div>
+                    <div class="p-6 text-gray-800 text-center leading-loose text-lg font-medium">
+                        ${formattedMenu}
+                    </div>
+                </div>
+            `;
         }
 
         /* --- 4. 벌점 관리 --- */
@@ -542,9 +601,10 @@
             list.innerHTML = '';
             const sorted = [...penaltyData].sort((a,b) => b.date.localeCompare(a.date));
             sorted.forEach(p => {
+                const displayDate = getFormattedDateWithDay(p.date);
                 list.innerHTML += `<li class="flex justify-between items-center p-3 border-l-4 border-red-500 rounded-r-lg bg-white shadow-sm mb-2">
                     <div>
-                        <div class="text-xs text-gray-500 mb-1">${p.date}</div>
+                        <div class="text-xs text-gray-500 mb-1">${displayDate}</div>
                         <div class="text-gray-800 font-bold tracking-wide">${p.stuId} <span class="text-red-600 ml-1 text-sm">(${p.grade}학년 ${p.cls}반 ${p.num}번)</span></div>
                     </div>
                     <button onclick="requestDeletePenalty(${p.id})" class="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-red-100 hover:text-red-600 border transition-colors">삭제</button>
@@ -585,6 +645,7 @@
             reader.readAsArrayBuffer(file);
         });
 
+        // 엑셀 업로드 처리 (급식 지도 교사표)
         document.getElementById('teacherFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -592,50 +653,132 @@
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    // 날짜 데이터 파싱을 위해 cellDates 옵션 사용
                     const workbook = XLSX.read(data, {type: 'array', cellDates: true});
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(worksheet);
                     
-                    let parsedTeachers = {};
-                    json.forEach(row => {
-                        let dateStr = '';
-                        // 엑셀 날짜 포맷팅 처리
-                        if(row['날짜'] instanceof Date) {
-                            const d = new Date(row['날짜']);
-                            // 타임존 차이로 인한 날짜 밀림 방지
-                            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                            dateStr = d.toISOString().split('T')[0];
-                        } else if(typeof row['날짜'] === 'string') {
-                            dateStr = row['날짜'].trim();
-                        } else if(typeof row['날짜'] === 'number') {
-                            // 엑셀 시리얼 번호 날짜 처리
-                            const d = new Date((row['날짜'] - 25569) * 86400 * 1000);
-                            dateStr = d.toISOString().split('T')[0];
+                    let newTeacherData = {};
+                    
+                    // 방법 1: 일반적인 열 제목 기반 파싱 시도 (날짜, 역할, 이름)
+                    const jsonObjects = XLSX.utils.sheet_to_json(worksheet, {raw: false, dateNF: 'yyyy-mm-dd'});
+                    let isObjectFormat = false;
+                    
+                    jsonObjects.forEach(row => {
+                        let dateStr = row['날짜'] || row['일자'] || row['일시'] || '';
+                        let role = row['역할'] || row['장소'] || row['지도구역'] || row['구분'] || '';
+                        let name = row['이름'] || row['성명'] || row['교사명'] || row['담당자'] || row['교사'] || '';
+                        
+                        if (dateStr instanceof Date) {
+                            dateStr = dateStr.toISOString().split('T')[0];
+                        } else if (typeof dateStr === 'string') {
+                            dateStr = dateStr.substring(0, 10).replace(/[\.\/]/g, '-');
                         }
-
-                        if(dateStr && row['이름']) {
-                            if(!parsedTeachers[dateStr]) parsedTeachers[dateStr] = [];
-                            parsedTeachers[dateStr].push({
-                                role: row['역할'] ? String(row['역할']).trim() : '지도교사',
-                                name: String(row['이름']).trim()
-                            });
+                        
+                        if (dateStr && name) {
+                            isObjectFormat = true;
+                            if(!newTeacherData[dateStr]) newTeacherData[dateStr] = [];
+                            newTeacherData[dateStr].push({ name: String(name).replace(/\s+/g,''), role: String(role).trim() });
                         }
                     });
+                    
+                    // 방법 2: 복잡한 양식 (병합된 셀 등이 포함된 특수 양식) 파싱
+                    if (!isObjectFormat) {
+                        const jsonMatrix = XLSX.utils.sheet_to_json(worksheet, {header: 1, raw: false, dateNF: 'yyyy-mm-dd'});
+                        let currentDates = [];
+                        
+                        for(let i=0; i<jsonMatrix.length; i++) {
+                            const row = jsonMatrix[i];
+                            if(!row || row.length === 0) continue;
+                            
+                            const roleMatch = row.find(cell => typeof cell === 'string' && (cell.includes('점심') || cell.includes('지도') || cell.includes('입구')));
+                            const role = roleMatch ? String(roleMatch).trim() : '급식지도';
+                            
+                            const name = row[1] ? String(row[1]).trim() : ''; 
+                            
+                            let rowHasDate = false;
+                            let tempDates = [];
+                            row.forEach(cell => {
+                                if(typeof cell === 'string') {
+                                    const dateMatch = cell.match(/202\d-\d{2}-\d{2}/);
+                                    if(dateMatch) {
+                                        tempDates.push(dateMatch[0]);
+                                        rowHasDate = true;
+                                    }
+                                }
+                            });
+                            
+                            if(rowHasDate) {
+                                currentDates = tempDates;
+                            }
+                            
+                            if (name && name.length >= 2 && name.length <= 5 && !rowHasDate) {
+                                currentDates.forEach(date => {
+                                    if(!newTeacherData[date]) newTeacherData[date] = [];
+                                    newTeacherData[date].push({ name: name.replace(/\s+/g,''), role: role });
+                                });
+                            }
+                        }
+                    }
+                    
+                    if(Object.keys(newTeacherData).length === 0) throw new Error("유효한 교사 데이터가 없습니다.");
 
-                    if(Object.keys(parsedTeachers).length === 0) throw new Error("유효한 데이터가 없습니다.");
-
-                    localStorage.setItem('smartMealTeachers', JSON.stringify(parsedTeachers));
-                    teacherData = parsedTeachers;
-                    showAlert('저장 완료', `총 ${Object.keys(parsedTeachers).length}일치의 교사 배정 데이터가 저장되었습니다.`);
+                    localStorage.setItem('smartMealTeachers', JSON.stringify(newTeacherData));
+                    teacherData = newTeacherData;
+                    showAlert('저장 완료', `교사 편성표가 성공적으로 저장되었습니다. (${Object.keys(newTeacherData).length}일치)`);
                     document.getElementById('teacherFile').value = '';
                     
-                    // 현재 입력된 날짜로 화면 즉시 갱신
                     if (document.getElementById('tab-teacher').classList.contains('active')) {
                         searchTeacherOnly();
                     }
                 } catch(err) { 
-                    showAlert('오류', '파일을 읽는 중 오류가 발생했습니다. (날짜, 역할, 이름 열을 확인하세요)'); 
+                    console.error(err);
+                    showAlert('오류', '파일을 읽는 중 오류가 발생했습니다.\n안내된 열 제목(날짜, 역할, 이름)이 포함되어 있는지 확인해주세요.'); 
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 엑셀 업로드 처리 (식단표)
+        document.getElementById('menuFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, dateNF: 'yyyy-mm-dd'});
+                    
+                    let newMenuData = {};
+                    
+                    json.forEach(row => {
+                        let dateStr = row['날짜'] || row['일자'] || row['일시'] || '';
+                        let menuStr = row['식단'] || row['메뉴'] || row['요리명'] || row['중식'] || row['식단명'] || '';
+                        
+                        // 엑셀 날짜 보정
+                        if (dateStr instanceof Date) {
+                            dateStr = dateStr.toISOString().split('T')[0];
+                        } else if (typeof dateStr === 'string') {
+                            dateStr = dateStr.substring(0, 10).replace(/[\.\/]/g, '-');
+                        }
+                        
+                        if (dateStr && menuStr) {
+                            newMenuData[dateStr] = String(menuStr).trim();
+                        }
+                    });
+
+                    if(Object.keys(newMenuData).length === 0) throw new Error("유효한 데이터가 없습니다.");
+
+                    localStorage.setItem('smartMealMenu', JSON.stringify(newMenuData));
+                    menuData = newMenuData;
+                    showAlert('저장 완료', `총 ${Object.keys(newMenuData).length}일치의 식단 데이터가 저장되었습니다.`);
+                    document.getElementById('menuFile').value = '';
+                    
+                    if (document.getElementById('tab-menu').classList.contains('active')) {
+                        renderMenu();
+                    }
+                } catch(err) { 
+                    showAlert('오류', '파일을 읽는 중 오류가 발생했습니다. (날짜, 식단 열을 확인하세요)'); 
                 }
             };
             reader.readAsArrayBuffer(file);
