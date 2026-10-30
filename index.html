@@ -4,30 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2학기 스마트 급식 지도</title>
-    
-    <!-- 엑셀 파싱을 위한 SheetJS 라이브러리 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
-    <!-- 세련된 UI를 위한 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { 
-            font-family: 'Pretendard', sans-serif; 
-            background-color: #f3f4f6; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+        body { font-family: 'Pretendard', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(5px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .nav-btn.active { color: #2563eb; font-weight: bold; }
         .nav-btn { color: #6b7280; transition: all 0.2s; }
-        
-        /* 커스텀 모달 애니메이션 */
-        #customModal { transition: opacity 0.2s; }
     </style>
 </head>
 <body class="text-gray-800 pb-20">
@@ -38,7 +24,7 @@
 
     <main class="p-4 max-w-md mx-auto">
         
-        <!-- 1. 학생/좌석 검색 탭 -->
+        <!-- 1. 검색 탭 -->
         <div id="tab-search" class="tab-content active space-y-4">
             <h2 class="font-bold text-lg border-b-2 border-blue-500 pb-2 inline-block">학생 / 좌석 검색</h2>
             <div class="flex gap-2">
@@ -54,51 +40,46 @@
         <div id="tab-spare" class="tab-content space-y-4">
             <h2 class="font-bold text-lg border-b-2 border-green-500 pb-2 inline-block">여분 좌석 조회</h2>
             <div class="flex gap-2">
-                <button id="btnSpare1" onclick="showSpare('1차')" class="flex-1 bg-green-500 text-white font-bold py-3 rounded-lg shadow transition-all border-4 border-red-600">1차 여분좌석</button>
+                <!-- 1차 여분좌석 버튼에 진한 빨간색 테두리를 위한 border 클래스 준비 -->
+                <button id="btnSpare1" onclick="showSpare('1차')" class="flex-1 bg-green-500 text-white font-bold py-3 rounded-lg shadow transition-all border-4 border-red-700">1차 여분좌석</button>
                 <button id="btnSpare2" onclick="showSpare('2차')" class="flex-1 bg-purple-500 text-white font-bold py-3 rounded-lg shadow opacity-50 transition-all border-4 border-transparent">2차 여분좌석</button>
             </div>
             <div id="spareInfoText" class="text-xs text-gray-500 italic text-center">3학년1반~10반 2학년 6반~10반</div>
             
             <div class="flex gap-2 mt-4">
                 <button id="btnSpareM" onclick="filterSpare('남')" class="flex-1 border-2 border-blue-400 text-blue-600 bg-blue-50 py-2 rounded-lg font-bold transition-colors">남학생 (남)</button>
-                <button id="btnSpareF" onclick="filterSpare('여')" class="flex-1 border-2 border-pink-400 text-pink-600 py-2 rounded-lg font-bold transition-colors">여학생 (여)</button>
+                <button id="btnSpareF" onclick="filterSpare('여')" class="flex-1 border-2 border-transparent text-gray-400 py-2 rounded-lg font-bold transition-colors">여학생 (여)</button>
             </div>
 
             <div id="spareResult" class="mt-4 grid grid-cols-4 gap-2"></div>
         </div>
 
-        <!-- 3. 학급 급식 순서 탭 -->
-        <div id="tab-order" class="tab-content space-y-4">
-            <h2 class="font-bold text-lg border-b-2 border-indigo-500 pb-2 inline-block">학급 급식 순서</h2>
-            <input type="date" id="orderDateInput" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="searchOrder()">
-            <button onclick="searchOrder()" class="w-full bg-indigo-500 text-white font-bold py-3 rounded-lg shadow mt-2">급식 순서 검색</button>
-            <div id="orderResult" class="mt-4"></div>
+        <!-- 3. 일정/교사/식단 통합 탭 -->
+        <div id="tab-info" class="tab-content space-y-4">
+            <h2 class="font-bold text-lg border-b-2 border-indigo-500 pb-2 inline-block">급식 정보 조회</h2>
+            
+            <input type="date" id="infoDate" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold" onchange="updateInfoView()">
+            
+            <div class="flex gap-2 mt-4 mb-2">
+                <button id="btnSubSeq" onclick="switchSub('seq')" class="flex-1 py-2 rounded-lg font-bold text-sm bg-indigo-100 text-indigo-700 border-2 border-indigo-500">학급 순서</button>
+                <button id="btnSubTeacher" onclick="switchSub('teacher')" class="flex-1 py-2 rounded-lg font-bold text-sm bg-gray-100 text-gray-600 border-2 border-transparent">지도 교사</button>
+                <button id="btnSubMenu" onclick="switchSub('menu')" class="flex-1 py-2 rounded-lg font-bold text-sm bg-gray-100 text-gray-600 border-2 border-transparent">식단표</button>
+            </div>
+
+            <div id="subViewSeq" class="mt-4"></div>
+            <div id="subViewTeacher" class="mt-4 hidden"></div>
+            <div id="subViewMenu" class="mt-4 hidden"></div>
         </div>
 
-        <!-- 3-2. 급식 지도 교사 탭 -->
-        <div id="tab-teacher" class="tab-content space-y-4">
-            <h2 class="font-bold text-lg border-b-2 border-teal-500 pb-2 inline-block">급식 지도 교사</h2>
-            <input type="date" id="teacherDateInput" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500" onchange="searchTeacherOnly()">
-            <button onclick="searchTeacherOnly()" class="w-full bg-teal-500 text-white font-bold py-3 rounded-lg shadow mt-2">지도 교사 검색</button>
-            <div id="teacherOnlyResult" class="mt-4"></div>
-        </div>
-
-        <!-- 3-3. 식단표 탭 -->
-        <div id="tab-menu" class="tab-content space-y-4">
-            <h2 class="font-bold text-lg border-b-2 border-orange-500 pb-2 inline-block">월간 식단표</h2>
-            <input type="date" id="menuDateInput" class="w-full border p-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="renderMenu()">
-            <button onclick="renderMenu()" class="w-full bg-orange-500 text-white font-bold py-3 rounded-lg shadow mt-2">식단 검색</button>
-            <div id="menuResult" class="mt-4"></div>
-        </div>
-
-        <!-- 4. 벌점 관리 탭 (초기값 제거됨) -->
+        <!-- 4. 벌점 탭 -->
         <div id="tab-penalty" class="tab-content space-y-4">
             <h2 class="font-bold text-lg border-b-2 border-red-500 pb-2 inline-block">이석 위반자 벌점 부여</h2>
-            <input type="date" id="penaltyDate" class="w-full border p-3 rounded-lg shadow-sm mb-2">
+            <input type="date" id="penaltyDate" class="w-full border p-3 rounded-lg shadow-sm mb-2 font-bold" onchange="renderPenalties()">
             <div class="flex gap-2 mb-2">
-                <input type="number" id="penGrade" placeholder="학년" min="1" max="3" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
-                <input type="number" id="penClass" placeholder="반" min="1" max="15" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
-                <input type="number" id="penNum" placeholder="번호" min="1" max="50" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
+                <!-- 반 초기값 비움 -->
+                <input type="number" id="penGrade" placeholder="학년" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
+                <input type="number" id="penClass" placeholder="반" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
+                <input type="number" id="penNum" placeholder="번호" class="w-1/3 border p-3 rounded-lg shadow-sm text-center">
             </div>
             <button onclick="addPenalty()" class="w-full bg-red-500 text-white font-bold py-3 rounded-lg shadow hover:bg-red-600">벌점 기록 저장</button>
             
@@ -106,218 +87,172 @@
             <ul id="penaltyList" class="space-y-2 mt-2 empty:after:content-['기록이_없습니다.'] empty:after:text-gray-400 empty:after:block empty:after:text-center empty:after:py-4"></ul>
         </div>
 
-        <!-- 5. 환경 설정 탭 -->
+        <!-- 5. 설정 탭 -->
         <div id="tab-settings" class="tab-content space-y-4">
             <h2 class="font-bold text-lg border-b-2 border-gray-500 pb-2 inline-block">데이터 업데이트</h2>
             <div class="bg-white p-4 rounded-lg shadow-sm border space-y-4">
                 <div>
-                    <label class="block font-bold text-sm mb-1 text-blue-700">1. 자리배치표 업로드 (.xlsx)</label>
-                    <input type="file" id="seatFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <label class="block font-bold text-sm mb-1 text-blue-700">1. 학생 자리배치표 (.xlsx)</label>
+                    <input type="file" id="seatFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 font-semibold">
                 </div>
-                <div class="border-t pt-4 mt-2">
-                    <label class="block font-bold text-sm mb-1 text-teal-700">2. 급식 지도 교사표 (.xlsx)</label>
-                    <input type="file" id="teacherFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
-                    <p class="text-xs text-gray-400 mt-1">※ '날짜', '역할'(또는 장소), '이름'(또는 교사) 열이 포함되어야 합니다.</p>
+                <hr>
+                <div>
+                    <label class="block font-bold text-sm mb-1 text-indigo-700">2. 급식 지도 교사표 (.xlsx)</label>
+                    <input type="file" id="teacherFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 font-semibold">
                 </div>
-                <div class="border-t pt-4 mt-2">
-                    <label class="block font-bold text-sm mb-1 text-orange-700">3. 월간 식단표 업로드 (.xlsx)</label>
-                    <input type="file" id="menuFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
-                    <p class="text-xs text-gray-400 mt-1">※ '날짜', '식단'(또는 메뉴, 요리명) 열이 포함되어야 합니다.</p>
+                <hr>
+                <div>
+                    <label class="block font-bold text-sm mb-1 text-green-700">3. 월간 식단표 (.xlsx)</label>
+                    <p class="text-xs text-gray-500 mb-1">※ '날짜', '식단'(또는 메뉴/요리명) 열이 포함되어야 합니다.</p>
+                    <input type="file" id="menuFile" accept=".xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 font-semibold">
                 </div>
             </div>
-            <button onclick="requestClearData()" class="w-full border-2 border-red-500 text-red-500 font-bold py-3 rounded-lg shadow mt-6 hover:bg-red-50">모든 데이터 초기화</button>
+            <button onclick="clearData()" class="w-full border-2 border-red-500 text-red-500 font-bold py-3 rounded-lg shadow mt-6 bg-white hover:bg-red-50">모든 데이터 초기화 (1학기 리셋)</button>
         </div>
     </main>
 
-    <!-- 커스텀 모달 오버레이 (alert, confirm 대체) -->
-    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-[85%] w-full mx-4 transform transition-all">
-            <h3 id="modalTitle" class="font-bold text-xl mb-3 text-gray-800">알림</h3>
-            <p id="modalMessage" class="text-gray-600 mb-6 leading-relaxed"></p>
-            <div class="flex justify-end gap-3">
-                <button id="modalBtnCancel" class="px-5 py-2.5 bg-gray-200 rounded-lg text-gray-800 hidden font-semibold hover:bg-gray-300">취소</button>
-                <button id="modalBtnConfirm" class="px-5 py-2.5 bg-blue-500 rounded-lg text-white font-semibold hover:bg-blue-600 shadow">확인</button>
+    <!-- 하단 네비게이션 -->
+    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10 text-[0.7rem] sm:text-xs pb-safe">
+        <button onclick="switchTab('search')" id="nav-search" class="nav-btn active flex flex-col items-center w-1/5 py-1">
+            <span class="text-xl mb-1">🔍</span>검색
+        </button>
+        <button onclick="switchTab('spare')" id="nav-spare" class="nav-btn flex flex-col items-center w-1/5 py-1">
+            <span class="text-xl mb-1">🪑</span>여분
+        </button>
+        <button onclick="switchTab('info')" id="nav-info" class="nav-btn flex flex-col items-center w-1/5 py-1">
+            <span class="text-xl mb-1">📅</span>급식정보
+        </button>
+        <button onclick="switchTab('penalty')" id="nav-penalty" class="nav-btn flex flex-col items-center w-1/5 py-1">
+            <span class="text-xl mb-1">🚨</span>벌점
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center w-1/5 py-1">
+            <span class="text-xl mb-1">⚙️</span>설정
+        </button>
+    </nav>
+
+    <!-- 내장 모달(Modal) UI -->
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 transition-opacity">
+        <div class="bg-white p-6 rounded-2xl w-4/5 max-w-sm shadow-2xl transform scale-95 transition-transform" id="modalBox">
+            <p id="modalMessage" class="text-gray-800 font-bold mb-6 whitespace-pre-line text-center leading-relaxed"></p>
+            <div class="flex justify-center gap-3">
+                <button id="modalCancelBtn" class="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hidden transition-colors hover:bg-gray-300">취소</button>
+                <button id="modalOkBtn" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md transition-colors hover:bg-blue-700">확인</button>
             </div>
         </div>
     </div>
 
-    <!-- 토스트 메시지 컨테이너 -->
-    <div id="toastContainer" class="fixed bottom-24 left-0 w-full flex flex-col items-center justify-end pointer-events-none z-50 space-y-2 px-4"></div>
-
-    <!-- 하단 네비게이션 바 (식단 탭 추가 및 디자인 조정) -->
-    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-10 text-[0.65rem] pb-safe overflow-x-auto">
-        <button onclick="switchTab('search')" id="nav-search" class="nav-btn active flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">🔍</span>검색
-        </button>
-        <button onclick="switchTab('spare')" id="nav-spare" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">🪑</span>여분
-        </button>
-        <button onclick="switchTab('order')" id="nav-order" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">📋</span>순서
-        </button>
-        <button onclick="switchTab('teacher')" id="nav-teacher" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">👨‍🏫</span>교사
-        </button>
-        <button onclick="switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">🍱</span>식단
-        </button>
-        <button onclick="switchTab('penalty')" id="nav-penalty" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">🚨</span>벌점
-        </button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center flex-1 min-w-[50px] py-1">
-            <span class="text-lg mb-1">⚙️</span>설정
-        </button>
-    </nav>
-
     <script>
-        // 전역 데이터 변수
+        /* === 데이터 상태 관리 === */
         let seatData = JSON.parse(localStorage.getItem('smartMealSeats')) || [];
-        
-        let defaultTeacherData = {
-            "2026-08-20": [
-                { role: "1차 입구(남)", name: "김태호" },
-                { role: "1차 입구(여)", name: "이유리" },
-                { role: "2차 입구(남)", name: "박지성" },
-                { role: "2차 입구(여)", name: "최수영" },
-                { role: "잔반 지도", name: "정형돈" }
-            ],
-            "2026-08-21": [
-                { role: "1차 입구(전체)", name: "홍길동" },
-                { role: "2차 입구(전체)", name: "이순신" },
-                { role: "잔반 지도", name: "유관순" }
-            ]
-        };
-        let teacherData = JSON.parse(localStorage.getItem('smartMealTeachers'));
-        if(!teacherData || Object.keys(teacherData).length === 0) {
-            teacherData = defaultTeacherData;
-        }
-
+        let teacherData = JSON.parse(localStorage.getItem('smartMealTeachers')) || {};
         let menuData = JSON.parse(localStorage.getItem('smartMealMenu')) || {};
         let penaltyData = JSON.parse(localStorage.getItem('smartMealPenalties')) || [];
+        
         let currentSpareShift = '1차';
         let currentSpareGender = '남';
+        let currentInfoSub = 'seq';
+
         const specialSeats = [208, 209, 210, 235, 236, 237, 286, 287, 288, 311, 312, 499, 500, 501, 502, 503, 504];
 
-        // 날짜 문자열에 요일을 덧붙여 반환하는 헬퍼 함수
-        function getFormattedDateWithDay(dateStr) {
-            if(!dateStr) return '';
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const d = new Date(dateStr);
-            if(isNaN(d.getTime())) return dateStr;
-            return `${dateStr}(${days[d.getDay()]})`;
-        }
+        // 앱 초기화
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('infoDate').value = todayStr;
+        document.getElementById('penaltyDate').value = todayStr;
+        renderPenalties();
 
-        // 앱 초기 세팅
-        window.onload = function() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            document.getElementById('orderDateInput').value = todayStr;
-            document.getElementById('teacherDateInput').value = todayStr;
-            document.getElementById('menuDateInput').value = todayStr;
-            document.getElementById('penaltyDate').value = todayStr;
-            renderPenalties();
-            
-            if(seatData.length === 0) {
-                showToast('설정 탭에서 엑셀 데이터를 먼저 업로드해주세요.');
-            }
-        };
-
-        /* --- 커스텀 모달 및 토스트 함수 --- */
-        function showAlert(title, message) {
-            setupModal(title, message, false);
-        }
-
-        function showConfirm(title, message, onConfirmCallback) {
-            setupModal(title, message, true, onConfirmCallback);
-        }
-
-        function setupModal(title, message, isConfirm, onConfirmCallback) {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalMessage').innerText = message;
-            
+        /* === 커스텀 팝업 함수 === */
+        function showAlert(msg) {
+            document.getElementById('modalMessage').innerText = msg;
+            document.getElementById('modalCancelBtn').classList.add('hidden');
             const modal = document.getElementById('customModal');
-            const btnCancel = document.getElementById('modalBtnCancel');
-            const btnConfirm = document.getElementById('modalBtnConfirm');
-            
-            // 기존 이벤트 제거를 위해 노드 교체
-            const newConfirm = btnConfirm.cloneNode(true);
-            btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
-            
-            if(isConfirm) {
-                btnCancel.classList.remove('hidden');
-                newConfirm.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-                newConfirm.classList.add('bg-red-500', 'hover:bg-red-600');
-                
-                btnCancel.onclick = () => modal.classList.add('hidden');
-                newConfirm.onclick = () => {
-                    modal.classList.add('hidden');
-                    if(onConfirmCallback) onConfirmCallback();
-                };
-            } else {
-                btnCancel.classList.add('hidden');
-                newConfirm.classList.remove('bg-red-500', 'hover:bg-red-600');
-                newConfirm.classList.add('bg-blue-500', 'hover:bg-blue-600');
-                
-                newConfirm.onclick = () => modal.classList.add('hidden');
-            }
-            modal.classList.remove('hidden');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('modalBox').classList.replace('scale-95', 'scale-100');
+            document.getElementById('modalOkBtn').onclick = () => {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                document.getElementById('modalBox').classList.replace('scale-100', 'scale-95');
+            };
         }
 
-        function showToast(message) {
-            const container = document.getElementById('toastContainer');
+        function showConfirm(msg, onConfirm) {
+            document.getElementById('modalMessage').innerText = msg;
+            document.getElementById('modalCancelBtn').classList.remove('hidden');
+            const modal = document.getElementById('customModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('modalBox').classList.replace('scale-95', 'scale-100');
+            
+            document.getElementById('modalOkBtn').onclick = () => {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                document.getElementById('modalBox').classList.replace('scale-100', 'scale-95');
+                onConfirm();
+            };
+            document.getElementById('modalCancelBtn').onclick = () => {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                document.getElementById('modalBox').classList.replace('scale-100', 'scale-95');
+            };
+        }
+
+        function showToast(msg) {
             const toast = document.createElement('div');
-            toast.className = 'bg-gray-800 text-white px-5 py-3 rounded-full shadow-lg text-sm transition-opacity duration-300 pointer-events-auto';
-            toast.innerText = message;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 2500);
+            toast.className = 'fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-lg z-50 text-sm font-bold transition-opacity duration-300';
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.style.opacity = '0', 2000);
+            setTimeout(() => toast.remove(), 2300);
         }
 
-        /* --- 탭 전환 --- */
+        /* === 유틸리티: 날짜 + 요일 포맷 === */
+        function formatDateWithDay(dateStr) {
+            if(!dateStr) return '';
+            const d = new Date(dateStr);
+            if(isNaN(d)) return dateStr;
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            return `${dateStr} (${days[d.getDay()]})`;
+        }
+
+        /* === 탭 전환 === */
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             document.getElementById('nav-' + tabId).classList.add('active');
             if(tabId === 'spare') renderSpareSeats();
+            if(tabId === 'info') updateInfoView();
         }
 
-        /* --- 1. 검색 기능 --- */
+        /* === 1. 학생/좌석 검색 === */
         function performSearch() {
             const q = document.getElementById('searchInput').value.trim();
             const resDiv = document.getElementById('searchResult');
             if(!q) return;
 
             if(seatData.length === 0) {
-                resDiv.innerHTML = `<div class="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-center">데이터가 없습니다.<br>설정 탭에서 파일을 업로드해주세요.</div>`;
+                resDiv.innerHTML = `<div class="bg-red-50 text-red-600 p-4 rounded-lg border text-center font-bold">자리배치표 데이터가 없습니다.<br>설정에서 엑셀 파일을 업로드해주세요.</div>`;
                 return;
             }
 
             let results = [];
             const isNumber = /^\d+$/.test(q);
             
-            if(isNumber && q.length >= 4) { // 학번 검색
+            if(isNumber && q.length >= 4) { // 학번
                 const grade = parseInt(q.substring(0,1));
                 const cls = parseInt(q.substring(1,3));
                 const num = parseInt(q.substring(3));
                 results = seatData.filter(s => s.학년 == grade && s.반 == cls && s.번호 == num);
-            } else if (isNumber && q.length < 4) { // 좌석번호 검색
+            } else if (isNumber && q.length < 4) { // 좌석번호
                 results = seatData.filter(s => s.좌석번호 == parseInt(q));
-            } else { // 이름 검색
+            } else { // 이름
                 results = seatData.filter(s => s.이름 && s.이름.includes(q));
             }
 
             if(results.length === 0) {
-                resDiv.innerHTML = `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">검색 결과가 없습니다.</div>`;
+                resDiv.innerHTML = `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border font-bold">검색 결과가 없습니다.</div>`;
                 return;
             }
 
             let html = `<ul class="space-y-3">`;
             results.forEach(s => {
                 let stuId = (s.학년 && s.반 && s.번호) ? `${s.학년}${String(s.반).padStart(2,'0')}${String(s.번호).padStart(2,'0')}` : '-';
-                
+                // 2차 급식 경고문 삭제 완료
                 let content = '';
                 if(isNumber && q.length >= 4) {
                     content = `<div class="text-gray-600 mt-1">이름: <span class="font-bold text-gray-900 text-lg ml-1">${s.이름 || '여분좌석'}</span></div>
@@ -338,461 +273,303 @@
                             </div>
                          </li>`;
             });
-            html += `</ul>`;
-            resDiv.innerHTML = html;
+            resDiv.innerHTML = html + `</ul>`;
         }
 
-        /* --- 2. 여분 좌석 조회 기능 --- */
+        /* === 2. 여분 좌석 === */
         function showSpare(shift) {
             currentSpareShift = shift;
-            const btn1 = document.getElementById('btnSpare1');
-            const btn2 = document.getElementById('btnSpare2');
-            
-            // 초기화
-            btn1.classList.remove('opacity-50', 'border-red-600', 'border-transparent');
-            btn2.classList.remove('opacity-50', 'border-red-600', 'border-transparent');
-            
             if(shift === '1차') {
-                btn2.classList.add('opacity-50', 'border-transparent');
-                btn1.classList.add('border-red-600');
+                document.getElementById('btnSpare1').classList.remove('opacity-50', 'border-transparent');
+                document.getElementById('btnSpare1').classList.add('border-red-700');
+                document.getElementById('btnSpare2').classList.add('opacity-50', 'border-transparent');
+                document.getElementById('btnSpare2').classList.remove('border-red-700');
                 document.getElementById('spareInfoText').innerText = "3학년1반~10반 2학년 6반~10반";
             } else {
-                btn1.classList.add('opacity-50', 'border-transparent');
-                btn2.classList.add('border-red-600');
-                document.getElementById('spareInfoText').innerText = "2학년 1반~5반, 1학년 1반~1학년10반";
+                document.getElementById('btnSpare2').classList.remove('opacity-50', 'border-transparent');
+                document.getElementById('btnSpare2').classList.add('border-red-700');
+                document.getElementById('btnSpare1').classList.add('opacity-50', 'border-transparent');
+                document.getElementById('btnSpare1').classList.remove('border-red-700');
+                document.getElementById('spareInfoText').innerText = "2학년 1반~5반, 1학년 1반~10반";
             }
             renderSpareSeats();
         }
 
         function filterSpare(gender) {
             currentSpareGender = gender;
-            const btnM = document.getElementById('btnSpareM');
-            const btnF = document.getElementById('btnSpareF');
-            
-            btnM.classList.remove('bg-blue-50', 'border-blue-400');
-            btnM.classList.add('border-gray-300', 'text-gray-400');
-            btnF.classList.remove('bg-pink-50', 'border-pink-400');
-            btnF.classList.add('border-gray-300', 'text-gray-400');
-            
-            if(gender === '남') {
-                btnM.classList.add('bg-blue-50', 'border-blue-400');
-                btnM.classList.remove('border-gray-300', 'text-gray-400');
-            } else {
-                btnF.classList.add('bg-pink-50', 'border-pink-400');
-                btnF.classList.remove('border-gray-300', 'text-gray-400');
-            }
+            document.getElementById('btnSpareM').className = `flex-1 border-2 py-2 rounded-lg font-bold transition-colors ${gender==='남'?'border-blue-400 text-blue-600 bg-blue-50':'border-transparent text-gray-400'}`;
+            document.getElementById('btnSpareF').className = `flex-1 border-2 py-2 rounded-lg font-bold transition-colors ${gender==='여'?'border-pink-400 text-pink-600 bg-pink-50':'border-transparent text-gray-400'}`;
             renderSpareSeats();
         }
 
         function renderSpareSeats() {
             const resDiv = document.getElementById('spareResult');
-            if(seatData.length === 0) {
-                resDiv.innerHTML = `<div class="col-span-4 text-center text-red-500 py-4 text-sm bg-red-50 rounded-lg border border-red-200">데이터를 업로드해주세요.</div>`;
-                return;
-            }
-
+            if(seatData.length === 0) { resDiv.innerHTML = `<div class="col-span-4 text-center font-bold text-red-500 py-4 text-sm">데이터를 업로드해주세요.</div>`; return; }
+            
             const filtered = seatData.filter(s => s.차시 === currentSpareShift && s.구역 === currentSpareGender && (!s.이름 || s.이름.includes('여분')));
             filtered.sort((a,b) => a.좌석번호 - b.좌석번호);
 
-            if(filtered.length === 0) {
-                resDiv.innerHTML = `<div class="col-span-4 text-center text-gray-500 py-4 text-sm bg-gray-50 rounded-lg border">해당 조건의 여분 좌석이 없습니다.</div>`;
-                return;
-            }
+            if(filtered.length === 0) { resDiv.innerHTML = `<div class="col-span-4 text-center font-bold text-gray-500 py-4 text-sm">여분 좌석이 없습니다.</div>`; return; }
 
             let html = '';
             filtered.forEach(s => {
                 const isSpecial = specialSeats.includes(s.좌석번호);
                 const bgClass = isSpecial ? 'bg-orange-500 text-white border-orange-600 shadow-md' : 'bg-white border-gray-300 text-gray-800 shadow-sm';
-                const specialText = isSpecial ? `<div class="text-[0.55rem] italic mt-1 font-normal text-center leading-tight">** 1, 2차 여분좌석</div>` : '';
+                const specialText = isSpecial ? `<div class="text-[0.55rem] italic mt-1 font-normal leading-tight">** 1,2차 여분</div>` : '';
                 html += `<div class="border rounded-lg p-2 flex flex-col items-center justify-center font-bold h-16 ${bgClass}">
-                            <span class="text-xl">${s.좌석번호}</span>
-                            ${specialText}
+                            <span class="text-xl">${s.좌석번호}</span>${specialText}
                          </div>`;
             });
             resDiv.innerHTML = html;
         }
 
-        /* --- 3. 학급 급식 순서 및 지도 교사 기능 --- */
+        /* === 3. 급식 정보 (순서/교사/식단) === */
+        
+        // 화살표 순서 전개 함수
+        function expR(grade, start) {
+            let res = [];
+            let total = grade === 2 ? 5 : 10;
+            let offset = grade === 2 && start >= 6 ? 5 : 0;
+            let curr = start;
+            for(let i=0; i<total; i++) {
+                res.push(`${grade}-${curr}반`);
+                curr++;
+                if (grade === 2 && offset === 5 && curr > 10) curr = 6;
+                else if (grade === 2 && offset === 0 && curr > 5) curr = 1;
+                else if ((grade === 1 || grade === 3) && curr > 10) curr = 1;
+            }
+            return res.join(' ➔ ');
+        }
+
         const schedules = [
-            { start: '2026-08-18', end: '2026-08-28', s1: '3-1반~10반, 2-6반~10반', s2: '2-1반~5반, 1-1반~10반' },
-            { start: '2026-08-31', end: '2026-09-11', s1: '3-2반~1반, 2-7반~6반', s2: '2-2반~1반, 1-2반~1반' },
-            { start: '2026-09-14', end: '2026-09-23', s1: '3-3반~2반, 2-8반~7반', s2: '2-3반~2반, 1-3반~2반' },
-            { start: '2026-09-28', end: '2026-10-08', s1: '3-4반~3반, 2-9반~8반', s2: '2-4반~3반, 1-4반~3반' },
-            { start: '2026-10-12', end: '2026-10-23', s1: '3-5반~4반, 2-10반~9반', s2: '2-5반~4반, 1-5반~4반' },
-            { start: '2026-10-26', end: '2026-11-06', s1: '3-6반~5반, 2-1반~5반', s2: '2-6반~10반, 1-6반~5반' },
-            { start: '2026-11-10', end: '2026-11-20', s1: '3-7반~6반, 2-2반~1반', s2: '2-7반~6반, 1-7반~6반' },
-            { start: '2026-11-23', end: '2026-12-04', s1: '3-8반~7반, 2-3반~2반', s2: '2-8반~7반, 1-8반~7반' },
-            { start: '2026-12-07', end: '2026-12-18', s1: '3-9반~8반, 2-4반~3반', s2: '2-9반~8반, 1-9반~8반' },
-            { start: '2026-12-14', end: '2026-12-23', s1: '3-10반~9반, 2-5반~4반', s2: '2-10반~9반, 1-10반~9반' },
-            { start: '2026-12-28', end: '2026-12-30', s1: '3-10반~9반, 2-5반~4반', s2: '2-10반~9반, 1-10반~9반' },
-            { start: '2027-02-01', end: '2027-02-03', s1: '3-10반~9반, 2-5반~4반', s2: '2-10반~9반, 1-10반~9반' }
+            { start: '2026-08-18', end: '2026-08-28', t3:1, t2_1:6, t2_2:1, t1:1 },
+            { start: '2026-08-31', end: '2026-09-11', t3:2, t2_1:7, t2_2:2, t1:2 },
+            { start: '2026-09-14', end: '2026-09-23', t3:3, t2_1:8, t2_2:3, t1:3 },
+            { start: '2026-09-28', end: '2026-10-08', t3:4, t2_1:9, t2_2:4, t1:4 },
+            { start: '2026-10-12', end: '2026-10-23', t3:5, t2_1:10, t2_2:5, t1:5 },
+            { start: '2026-10-26', end: '2026-11-20', t3:6, t2_1:6, t2_2:1, t1:6 }, // 10.26 그룹 고정 및 2학년 순서 수정완료
+            { start: '2026-11-23', end: '2026-12-04', t3:7, t2_1:7, t2_2:2, t1:7 },
+            { start: '2026-12-07', end: '2026-12-11', t3:8, t2_1:8, t2_2:3, t1:8 },
+            { start: '2026-12-14', end: '2026-12-23', t3:9, t2_1:9, t2_2:4, t1:9 },
+            { start: '2026-12-28', end: '2026-12-30', t3:10, t2_1:10, t2_2:5, t1:10 },
+            { start: '2027-02-01', end: '2027-02-03', t3:10, t2_1:10, t2_2:5, t1:10 }
         ];
 
-        function parseSequence(str) {
-            const parts = str.split(',').map(s => s.trim());
-            let allSeqs = [];
-            parts.forEach(part => {
-                const cleanPart = part.replace(/\s+/g, '');
-                const match = cleanPart.match(/(\d+)-(\d+)반?~(\d+)반?/);
-                if(match) {
-                    const grade = parseInt(match[1]);
-                    const startCls = parseInt(match[2]);
-                    const endCls = parseInt(match[3]);
-                    
-                    let minCls = 1, maxCls = 10;
-                    if(grade === 3 || grade === 1) {
-                        minCls = 1; maxCls = 10;
-                    } else if(grade === 2) {
-                        if(startCls <= 5 && endCls <= 5) {
-                            minCls = 1; maxCls = 5;
-                        } else if(startCls >= 6 && endCls >= 6) {
-                            minCls = 6; maxCls = 10;
-                        } else {
-                            minCls = 1; maxCls = 10;
-                        }
-                    }
-                    
-                    let seq = [];
-                    let curr = startCls;
-                    let count = 0;
-                    while(count < 15) {
-                        seq.push(`<span class="font-bold text-gray-800 whitespace-nowrap">${grade}-${curr}반</span>`);
-                        if(curr === endCls) break;
-                        curr++;
-                        if(curr > maxCls) curr = minCls;
-                        count++;
-                    }
-                    allSeqs.push(seq.join(' <span class="text-indigo-400 text-sm mx-0.5">➔</span> '));
+        function switchSub(sub) {
+            currentInfoSub = sub;
+            ['Seq', 'Teacher', 'Menu'].forEach(k => {
+                let s = k.toLowerCase();
+                let btn = document.getElementById('btnSub' + k);
+                let view = document.getElementById('subView' + k);
+                if(s === sub) {
+                    btn.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-indigo-100 text-indigo-700 border-2 border-indigo-500 transition-colors';
+                    view.classList.remove('hidden');
                 } else {
-                    allSeqs.push(`<span class="font-bold text-gray-800">${part}</span>`);
+                    btn.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-gray-100 text-gray-600 border-2 border-transparent transition-colors';
+                    view.classList.add('hidden');
                 }
             });
-            return allSeqs.join('<div class="my-2 border-b border-dashed border-gray-300"></div>');
+            updateInfoView();
         }
 
-        function searchOrder() {
-            const d = document.getElementById('orderDateInput').value;
+        function updateInfoView() {
+            const d = document.getElementById('infoDate').value;
             if(!d) return;
-            
-            const scheduleMatch = schedules.find(s => d >= s.start && d <= s.end);
-            let html = '';
+            const formattedD = formatDateWithDay(d);
 
-            if(scheduleMatch) {
-                const displayDate = getFormattedDateWithDay(d);
-                const startDate = getFormattedDateWithDay(scheduleMatch.start);
-                html += `<div class="bg-indigo-50 border border-indigo-200 p-5 rounded-xl mb-4 shadow-sm">
-                    <h4 class="font-bold text-indigo-900 mb-3 border-b border-indigo-200 pb-2 flex justify-between items-center">
-                        <span class="text-lg">${displayDate} 급식 순서</span>
-                        <span class="text-xs font-semibold bg-indigo-100 px-2 py-1 rounded text-indigo-700">${startDate} ~</span>
-                    </h4>
-                    
-                    <div class="mb-4">
-                        <div class="flex items-center mb-2">
-                            <strong class="text-green-700 bg-green-100 px-3 py-1 rounded-full shadow-sm text-sm border border-green-200">1차 급식 (12:20)</strong>
-                        </div>
-                        <div class="text-[0.9rem] text-gray-700 bg-white p-3 rounded-lg border shadow-inner leading-relaxed overflow-x-auto">
-                            ${parseSequence(scheduleMatch.s1)}
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <div class="flex items-center mb-2">
-                            <strong class="text-purple-700 bg-purple-100 px-3 py-1 rounded-full shadow-sm text-sm border border-purple-200">2차 급식 (12:40)</strong>
-                        </div>
-                        <div class="text-[0.9rem] text-gray-700 bg-white p-3 rounded-lg border shadow-inner leading-relaxed overflow-x-auto">
-                            ${parseSequence(scheduleMatch.s2)}
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 text-center">
-                        ※ 1차 급식 앞 반은 입장시간 준수. <br>(12:35분 이후 입장 시 불이익)
-                    </div>
-                </div>`;
-            } else {
-                html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜에 배정된 급식 순서 정보가 없습니다.</div>`;
-            }
-            document.getElementById('orderResult').innerHTML = html;
-        }
-
-        function searchTeacherOnly() {
-            const d = document.getElementById('teacherDateInput').value;
-            if(!d) return;
-            
-            const displayDate = getFormattedDateWithDay(d);
-            let html = '';
-            const teachers = teacherData[d];
-            if(!teachers || teachers.length === 0) {
-                html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜에 배정된 지도 교사 정보가 없습니다.</div>`;
-            } else {
-                html += `<div class="bg-white p-4 rounded-xl border shadow-sm"><h4 class="font-bold text-lg mb-3 text-teal-800 border-b pb-2 flex items-center gap-2"><span>👨‍🏫</span> ${displayDate} 지도 교사</h4><ul class="space-y-3">`;
-                teachers.forEach(t => {
-                    html += `<li class="flex justify-between items-center bg-teal-50 p-3 rounded-lg border border-teal-100 shadow-sm"><span class="text-sm font-semibold text-teal-700">${t.role}</span><span class="font-bold text-lg text-gray-800">${t.name} 교사</span></li>`;
-                });
-                html += `</ul></div>`;
-            }
-            document.getElementById('teacherOnlyResult').innerHTML = html;
-        }
-
-        /* --- 3-3. 식단표 렌더링 --- */
-        function renderMenu() {
-            const d = document.getElementById('menuDateInput').value;
-            if(!d) return;
-            
-            const resDiv = document.getElementById('menuResult');
-            const menuStr = menuData[d];
-            
-            if(!menuStr) {
-                resDiv.innerHTML = `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border">해당 날짜의 식단 정보가 없습니다.<br>설정에서 식단표 엑셀을 업로드해주세요.</div>`;
-                return;
+            // 1. 순서
+            if(currentInfoSub === 'seq') {
+                const sMatch = schedules.find(s => d >= s.start && d <= s.end);
+                let html = `<h3 class="font-bold text-lg mb-3 text-indigo-800">${formattedD} 급식 순서</h3>`;
+                if(sMatch) {
+                    html += `
+                        <div class="space-y-4">
+                            <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
+                                <div class="font-black text-green-700 mb-2 border-b border-green-200 pb-1">1차 급식 (12:20)</div>
+                                <div class="text-sm font-bold text-gray-700 leading-relaxed break-keep tracking-tight">
+                                    [3학년] <span class="text-indigo-600">${expR(3, sMatch.t3)}</span><br><br>
+                                    [2학년] <span class="text-blue-600">${expR(2, sMatch.t2_1)}</span>
+                                </div>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm">
+                                <div class="font-black text-purple-700 mb-2 border-b border-purple-200 pb-1">2차 급식 (12:40)</div>
+                                <div class="text-sm font-bold text-gray-700 leading-relaxed break-keep tracking-tight">
+                                    [2학년] <span class="text-blue-600">${expR(2, sMatch.t2_2)}</span><br><br>
+                                    [1학년] <span class="text-pink-600">${expR(1, sMatch.t1)}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                } else { html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border font-bold">해당 날짜의 순서 정보가 없습니다.</div>`; }
+                document.getElementById('subViewSeq').innerHTML = html;
             }
             
-            const displayDate = getFormattedDateWithDay(d);
-            // 엑셀에서 줄바꿈이 있는 경우 유지, 쉼표가 있는 경우도 보기 좋게 변경
-            const formattedMenu = menuStr.replace(/\n/g, '<br>').replace(/,/g, '<br>');
-            
-            resDiv.innerHTML = `
-                <div class="bg-white border shadow-sm rounded-xl overflow-hidden mt-2">
-                    <div class="bg-orange-50 border-b border-orange-100 p-3 text-center font-bold text-orange-800 flex justify-between items-center">
-                        <span>🍱 ${displayDate} 식단</span>
-                    </div>
-                    <div class="p-6 text-gray-800 text-center leading-loose text-lg font-medium">
-                        ${formattedMenu}
-                    </div>
-                </div>
-            `;
+            // 2. 교사
+            if(currentInfoSub === 'teacher') {
+                const teachers = teacherData[d];
+                let html = `<h3 class="font-bold text-lg mb-3 text-blue-800">${formattedD} 지도 교사</h3>`;
+                if(!teachers || teachers.length === 0) {
+                    html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border font-bold">데이터가 없습니다.<br>설정 탭에서 교사표를 업로드해주세요.</div>`;
+                } else {
+                    html += `<ul class="space-y-3">`;
+                    teachers.forEach(t => {
+                        html += `<li class="flex justify-between items-center bg-white p-3 border rounded-lg shadow-sm">
+                                    <span class="text-sm text-gray-600 font-bold">${t.role}</span>
+                                    <span class="font-black text-lg text-blue-700">${t.name} 교사</span>
+                                 </li>`;
+                    });
+                    html += `</ul>`;
+                }
+                document.getElementById('subViewTeacher').innerHTML = html;
+            }
+
+            // 3. 식단
+            if(currentInfoSub === 'menu') {
+                const menu = menuData[d];
+                let html = `<h3 class="font-bold text-lg mb-3 text-green-800">${formattedD} 식단표</h3>`;
+                if(!menu) {
+                    html += `<div class="bg-gray-50 text-gray-500 p-4 rounded-lg text-center border font-bold">데이터가 없습니다.<br>설정 탭에서 식단표를 업로드해주세요.</div>`;
+                } else {
+                    html += `<div class="bg-white p-6 border-2 border-green-200 rounded-xl shadow-md text-center font-bold text-gray-800 text-lg leading-relaxed whitespace-pre-line">${menu}</div>`;
+                }
+                document.getElementById('subViewMenu').innerHTML = html;
+            }
         }
 
-        /* --- 4. 벌점 관리 --- */
+        /* === 4. 벌점 === */
         function addPenalty() {
             const date = document.getElementById('penaltyDate').value;
             const grade = document.getElementById('penGrade').value;
             const cls = document.getElementById('penClass').value;
             const num = document.getElementById('penNum').value;
             
-            if(!date || !grade || !cls || !num) { 
-                showAlert('입력 오류', '날짜 및 학년, 반, 번호를 모두 입력해주세요.'); 
-                return; 
-            }
+            if(!date || !grade || !cls || !num) { showAlert('학년, 반, 번호를 모두 입력해주세요.'); return; }
             
-            const record = { 
-                id: Date.now(), date: date, grade: grade, cls: cls, num: num, 
-                stuId: `${grade}${String(cls).padStart(2,'0')}${String(num).padStart(2,'0')}` 
-            };
+            const record = { id: Date.now(), date: date, grade: grade, cls: cls, num: num, 
+                             stuId: `${grade}${String(cls).padStart(2,'0')}${String(num).padStart(2,'0')}` };
             
             penaltyData.push(record);
             localStorage.setItem('smartMealPenalties', JSON.stringify(penaltyData));
+            showToast('✅ 벌점이 저장되었습니다.');
             renderPenalties();
-            
-            showToast('벌점이 정상적으로 저장되었습니다.');
-            document.getElementById('penNum').value = ''; // 다음 학생 입력을 위해 번호만 지움
+            document.getElementById('penNum').value = '';
         }
 
-        function requestDeletePenalty(id) {
-            showConfirm('기록 삭제', '해당 학생의 벌점 기록을 삭제하시겠습니까?', () => {
+        function deletePenalty(id) {
+            showConfirm('해당 벌점 기록을 삭제하시겠습니까?', () => {
                 penaltyData = penaltyData.filter(p => p.id !== id);
                 localStorage.setItem('smartMealPenalties', JSON.stringify(penaltyData));
                 renderPenalties();
-                showToast('삭제되었습니다.');
+                showToast('삭제 완료');
             });
         }
 
         function renderPenalties() {
             const list = document.getElementById('penaltyList');
+            const targetDate = document.getElementById('penaltyDate').value;
             list.innerHTML = '';
-            const sorted = [...penaltyData].sort((a,b) => b.date.localeCompare(a.date));
-            sorted.forEach(p => {
-                const displayDate = getFormattedDateWithDay(p.date);
+            
+            // 선택한 날짜에 해당하는 기록만 표시
+            const filtered = penaltyData.filter(p => p.date === targetDate).sort((a,b) => b.id - a.id);
+            
+            filtered.forEach(p => {
                 list.innerHTML += `<li class="flex justify-between items-center p-3 border-l-4 border-red-500 rounded-r-lg bg-white shadow-sm mb-2">
                     <div>
-                        <div class="text-xs text-gray-500 mb-1">${displayDate}</div>
-                        <div class="text-gray-800 font-bold tracking-wide">${p.stuId} <span class="text-red-600 ml-1 text-sm">(${p.grade}학년 ${p.cls}반 ${p.num}번)</span></div>
+                        <div class="text-xs text-gray-500 font-bold mb-1">${formatDateWithDay(p.date)}</div>
+                        <div class="text-gray-800 font-black tracking-wide">${p.stuId} <span class="text-red-600 ml-1 text-sm font-bold">(${p.grade}학년 ${p.cls}반 ${p.num}번)</span></div>
                     </div>
-                    <button onclick="requestDeletePenalty(${p.id})" class="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-red-100 hover:text-red-600 border transition-colors">삭제</button>
+                    <button onclick="deletePenalty(${p.id})" class="text-xs bg-gray-100 font-bold text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 border">삭제</button>
                 </li>`;
             });
         }
 
-        /* --- 5. 환경 설정 (엑셀 파싱) --- */
+        /* === 5. 엑셀 업로드 === */
+        
+        // 자리배치표
         document.getElementById('seatFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
+            if(!e.target.files[0]) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = e => {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-                    
-                    const cleanedData = json.map(row => ({
-                        차시: row['차시'] ? String(row['차시']).trim() : '',
-                        구역: row['구역'] ? String(row['구역']).trim() : '',
-                        학년: parseInt(row['학년']) || '',
-                        반: parseInt(row['반']) || '',
-                        번호: parseInt(row['번호']) || '',
-                        이름: row['이름'] ? String(row['이름']).trim() : '',
-                        좌석번호: parseInt(row['좌석번호']) || 0
+                    const json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), {type: 'array'}).Sheets[XLSX.read(new Uint8Array(e.target.result), {type: 'array'}).SheetNames[0]], {defval: ""});
+                    const cleaned = json.map(r => ({
+                        차시: String(r['차시']||'').trim(), 구역: String(r['구역']||'').trim(),
+                        학년: parseInt(r['학년'])||'', 반: parseInt(r['반'])||'', 번호: parseInt(r['번호'])||'',
+                        이름: String(r['이름']||'').trim(), 좌석번호: parseInt(r['좌석번호'])||0
                     })).filter(r => r.좌석번호 > 0);
-
-                    localStorage.setItem('smartMealSeats', JSON.stringify(cleanedData));
-                    seatData = cleanedData;
-                    showAlert('저장 완료', `자리배치표 ${cleanedData.length}개 데이터가 성공적으로 저장되었습니다.`);
+                    localStorage.setItem('smartMealSeats', JSON.stringify(cleaned));
+                    seatData = cleaned;
+                    showAlert(`✅ 자리배치표 ${cleaned.length}건이 저장되었습니다.`);
                     document.getElementById('seatFile').value = '';
-                } catch(err) { 
-                    showAlert('오류', '엑셀 파일을 읽는 중 오류가 발생했습니다.'); 
-                }
+                } catch(err) { showAlert('엑셀 오류 (자리배치표)'); }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        // 엑셀 업로드 처리 (급식 지도 교사표)
+        // 지도 교사표 (강화된 자동 인식)
         document.getElementById('teacherFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
+            if(!e.target.files[0]) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = e => {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), {type: 'array', cellDates: true}).Sheets[XLSX.read(new Uint8Array(e.target.result), {type: 'array', cellDates: true}).SheetNames[0]], {header: 1, raw: false, dateNF: 'yyyy-mm-dd'});
+                    let newData = {};
+                    let savedDates = [];
                     
-                    let newTeacherData = {};
-                    
-                    // 방법 1: 일반적인 열 제목 기반 파싱 시도 (날짜, 역할, 이름)
-                    const jsonObjects = XLSX.utils.sheet_to_json(worksheet, {raw: false, dateNF: 'yyyy-mm-dd'});
-                    let isObjectFormat = false;
-                    
-                    jsonObjects.forEach(row => {
-                        let dateStr = row['날짜'] || row['일자'] || row['일시'] || '';
-                        let role = row['역할'] || row['장소'] || row['지도구역'] || row['구분'] || '';
-                        let name = row['이름'] || row['성명'] || row['교사명'] || row['담당자'] || row['교사'] || '';
+                    for(let i=1; i<json.length; i++) {
+                        const row = json[i];
+                        if(!row || row.length === 0) continue;
                         
-                        if (dateStr instanceof Date) {
-                            dateStr = dateStr.toISOString().split('T')[0];
-                        } else if (typeof dateStr === 'string') {
-                            dateStr = dateStr.substring(0, 10).replace(/[\.\/]/g, '-');
-                        }
+                        let role = ''; let name = row[1] || '';
+                        for(let c of row) { if(typeof c==='string' && c.includes('점심시간')) { role = c; break; } }
                         
-                        if (dateStr && name) {
-                            isObjectFormat = true;
-                            if(!newTeacherData[dateStr]) newTeacherData[dateStr] = [];
-                            newTeacherData[dateStr].push({ name: String(name).replace(/\s+/g,''), role: String(role).trim() });
-                        }
-                    });
-                    
-                    // 방법 2: 복잡한 양식 (병합된 셀 등이 포함된 특수 양식) 파싱
-                    if (!isObjectFormat) {
-                        const jsonMatrix = XLSX.utils.sheet_to_json(worksheet, {header: 1, raw: false, dateNF: 'yyyy-mm-dd'});
-                        let currentDates = [];
+                        let foundDates = [];
+                        row.forEach(c => { if(typeof c==='string' && c.match(/^202\d-\d{2}-\d{2}/)) foundDates.push(c.substring(0,10)); });
+                        if(foundDates.length > 0) savedDates = foundDates;
                         
-                        for(let i=0; i<jsonMatrix.length; i++) {
-                            const row = jsonMatrix[i];
-                            if(!row || row.length === 0) continue;
-                            
-                            const roleMatch = row.find(cell => typeof cell === 'string' && (cell.includes('점심') || cell.includes('지도') || cell.includes('입구')));
-                            const role = roleMatch ? String(roleMatch).trim() : '급식지도';
-                            
-                            const name = row[1] ? String(row[1]).trim() : ''; 
-                            
-                            let rowHasDate = false;
-                            let tempDates = [];
-                            row.forEach(cell => {
-                                if(typeof cell === 'string') {
-                                    const dateMatch = cell.match(/202\d-\d{2}-\d{2}/);
-                                    if(dateMatch) {
-                                        tempDates.push(dateMatch[0]);
-                                        rowHasDate = true;
-                                    }
-                                }
+                        if(name && role && savedDates.length > 0) {
+                            savedDates.forEach(d => {
+                                if(!newData[d]) newData[d] = [];
+                                newData[d].push({ name: name.replace(/\s+/g,''), role: role.trim() });
                             });
-                            
-                            if(rowHasDate) {
-                                currentDates = tempDates;
-                            }
-                            
-                            if (name && name.length >= 2 && name.length <= 5 && !rowHasDate) {
-                                currentDates.forEach(date => {
-                                    if(!newTeacherData[date]) newTeacherData[date] = [];
-                                    newTeacherData[date].push({ name: name.replace(/\s+/g,''), role: role });
-                                });
-                            }
                         }
                     }
-                    
-                    if(Object.keys(newTeacherData).length === 0) throw new Error("유효한 교사 데이터가 없습니다.");
-
-                    localStorage.setItem('smartMealTeachers', JSON.stringify(newTeacherData));
-                    teacherData = newTeacherData;
-                    showAlert('저장 완료', `교사 편성표가 성공적으로 저장되었습니다. (${Object.keys(newTeacherData).length}일치)`);
+                    localStorage.setItem('smartMealTeachers', JSON.stringify(newData));
+                    teacherData = newData;
+                    showAlert(`✅ 급식 지도 교사표가 저장되었습니다.\n(${Object.keys(newData).length}일치)`);
                     document.getElementById('teacherFile').value = '';
-                    
-                    if (document.getElementById('tab-teacher').classList.contains('active')) {
-                        searchTeacherOnly();
-                    }
-                } catch(err) { 
-                    console.error(err);
-                    showAlert('오류', '파일을 읽는 중 오류가 발생했습니다.\n안내된 열 제목(날짜, 역할, 이름)이 포함되어 있는지 확인해주세요.'); 
-                }
+                } catch(err) { showAlert('엑셀 오류 (교사표)'); }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        // 엑셀 업로드 처리 (식단표)
+        // 월간 식단표
         document.getElementById('menuFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
+            if(!e.target.files[0]) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = e => {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, dateNF: 'yyyy-mm-dd'});
-                    
-                    let newMenuData = {};
-                    
+                    const json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), {type: 'array', cellDates: true}).Sheets[XLSX.read(new Uint8Array(e.target.result), {type: 'array', cellDates: true}).SheetNames[0]], {raw: false, dateNF: 'yyyy-mm-dd'});
+                    let newData = {};
                     json.forEach(row => {
-                        let dateStr = row['날짜'] || row['일자'] || row['일시'] || '';
-                        let menuStr = row['식단'] || row['메뉴'] || row['요리명'] || row['중식'] || row['식단명'] || '';
-                        
-                        // 엑셀 날짜 보정
-                        if (dateStr instanceof Date) {
-                            dateStr = dateStr.toISOString().split('T')[0];
-                        } else if (typeof dateStr === 'string') {
-                            dateStr = dateStr.substring(0, 10).replace(/[\.\/]/g, '-');
-                        }
-                        
-                        if (dateStr && menuStr) {
-                            newMenuData[dateStr] = String(menuStr).trim();
-                        }
+                        let dKey = row['날짜'] ? String(row['날짜']).substring(0,10) : '';
+                        let text = row['식단'] || row['메뉴'] || row['요리명'] || '';
+                        if(dKey && text) newData[dKey] = text.replace(/\n/g, '\n');
                     });
-
-                    if(Object.keys(newMenuData).length === 0) throw new Error("유효한 데이터가 없습니다.");
-
-                    localStorage.setItem('smartMealMenu', JSON.stringify(newMenuData));
-                    menuData = newMenuData;
-                    showAlert('저장 완료', `총 ${Object.keys(newMenuData).length}일치의 식단 데이터가 저장되었습니다.`);
+                    localStorage.setItem('smartMealMenu', JSON.stringify(newData));
+                    menuData = newData;
+                    showAlert(`✅ 식단표 데이터가 저장되었습니다.\n(${Object.keys(newData).length}일치)`);
                     document.getElementById('menuFile').value = '';
-                    
-                    if (document.getElementById('tab-menu').classList.contains('active')) {
-                        renderMenu();
-                    }
-                } catch(err) { 
-                    showAlert('오류', '파일을 읽는 중 오류가 발생했습니다. (날짜, 식단 열을 확인하세요)'); 
-                }
+                } catch(err) { showAlert('엑셀 오류 (식단표)'); }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function requestClearData() {
-            showConfirm(
-                '데이터 초기화', 
-                '저장된 모든 자리배치, 벌점 데이터를 기기에서 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.', 
-                () => {
-                    localStorage.clear();
-                    location.reload();
-                }
-            );
+        function clearData() {
+            showConfirm('스마트폰에 저장된 자리배치, 교사, 식단, 벌점 데이터를 모두 삭제하시겠습니까?\n(1학기 데이터 리셋 시 사용)', () => {
+                localStorage.clear();
+                showToast('완전히 초기화되었습니다.');
+                setTimeout(() => location.reload(), 1500);
+            });
         }
     </script>
 </body>
